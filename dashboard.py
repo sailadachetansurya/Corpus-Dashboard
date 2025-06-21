@@ -57,7 +57,10 @@ def initialize_session_state():
         "token": None,
         "user_id": None,
         "login_attempts": 0,
-        "selected_category": "Fables"
+        "selected_category": "Fables",
+        "query_user_id": "",
+        "query_results": None,
+        "last_queried_user": None
     }
     
     for var, default_value in session_vars.items():
@@ -174,6 +177,56 @@ def fetch_records(user_id: str, token: str) -> List[Dict]:
         return []
     except Exception as e:
         logger.error(f"Unexpected error fetching records: {e}")
+        st.error(f"Unexpected error: {e}")
+        return []
+
+def fetch_any_user_records(query_user_id: str, token: str) -> List[Dict]:
+    """Fetch records for any user ID with specific error handling"""
+    if not query_user_id or not token:
+        st.error("User ID and token are required")
+        return []
+        
+    # Validate UUID format (basic validation)
+    if len(query_user_id.strip()) < 10:
+        st.error("Please enter a valid User ID")
+        return []
+        
+    url = f"https://backend2.swecha.org/api/v1/records/?user_id={query_user_id.strip()}&skip=0&limit=1000"
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    
+    try:
+        with st.spinner(f"Fetching records for user {query_user_id[:8]}..."):
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+            
+            data = response.json()
+            if not isinstance(data, list):
+                logger.warning(f"Expected list, got {type(data)}")
+                st.warning("Unexpected data format received from server")
+                return []
+                
+            logger.info(f"Successfully fetched {len(data)} records for user {query_user_id}")
+            return data
+            
+    except requests.exceptions.Timeout:
+        st.error("Request timed out. Please try again.")
+        return []
+    except requests.exceptions.ConnectionError:
+        st.error("Unable to connect to the server. Please check your internet connection.")
+        return []
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            st.error("Authentication failed. Please log in again.")
+            st.session_state.authenticated = False
+        elif e.response.status_code == 403:
+            st.error("Access denied. You don't have permission to view this user's data.")
+        elif e.response.status_code == 404:
+            st.warning(f"No records found for user ID: {query_user_id}")
+        else:
+            st.error(f"Failed to fetch records: HTTP {e.response.status_code}")
+        return []
+    except Exception as e:
+        logger.error(f"Unexpected error fetching records for user {query_user_id}: {e}")
         st.error(f"Unexpected error: {e}")
         return []
 
@@ -499,6 +552,111 @@ def create_category_plotly_charts(summary: Dict, category_name: str):
         logger.error(f"Error creating category charts: {e}")
         st.error(f"Error creating category charts: {e}")
 
+def create_user_query_charts(summary: Dict, queried_user_id: str):
+    """Create charts for queried user data"""
+    if not summary:
+        st.warning(f"No data available for user {queried_user_id}")
+        return
+    
+    try:
+        df = summary['df']
+        
+        # Create columns for layout
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Total Records Card
+            total_records = summary.get('total_records', len(df))
+            st.metric(
+                label=f"📊 Total Records for User {queried_user_id[:8]}...",
+                value=f"{total_records:,}",
+                delta=None
+            )
+            
+            # Media Type Distribution Pie Chart
+            if not summary["media_type"].empty:
+                media_counts = summary["media_type"]
+                fig_pie = px.pie(
+                    values=media_counts.values,
+                    names=media_counts.index,
+                    title=f"Media Types - User {queried_user_id[:8]}...",
+                    color_discrete_sequence=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
+                )
+                fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+                fig_pie.update_layout(
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font_color='white'
+                )
+                st.plotly_chart(fig_pie, use_container_width=True)
+        
+        with col2:
+            # Category Distribution Bar Chart
+            if not summary["category"].empty:
+                category_counts = summary["category"].head(10)
+                fig_bar = px.bar(
+                    x=category_counts.values,
+                    y=category_counts.index,
+                    orientation='h',
+                    title=f"Categories - User {queried_user_id[:8]}...",
+                    labels={'x': 'Count', 'y': 'Category'},
+                    color=category_counts.values,
+                    color_continuous_scale='plasma'
+                )
+                fig_bar.update_layout(
+                    yaxis={'categoryorder': 'total ascending'},
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font_color='white'
+                )
+                st.plotly_chart(fig_bar, use_container_width=True)
+        
+        # Status Distribution
+        if not summary["status"].empty:
+            st.subheader(f"📈 Status Distribution - User {queried_user_id[:8]}...")
+            fig_status = px.bar(
+                x=summary["status"].index,
+                y=summary["status"].values,
+                title=f"Upload Status - User {queried_user_id[:8]}...",
+                labels={'x': 'Status', 'y': 'Count'},
+                color=summary["status"].values,
+                color_continuous_scale='viridis'
+            )
+            fig_status.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font_color='white'
+            )
+            st.plotly_chart(fig_status, use_container_width=True)
+        
+        # Timeline Chart
+        if not summary["uploads_per_day"].empty:
+            st.subheader(f"📅 Upload Timeline - User {queried_user_id[:8]}...")
+            daily_uploads = summary["uploads_per_day"].reset_index()
+            daily_uploads.columns = ['Date', 'Count']
+            
+            fig_timeline = px.line(
+                daily_uploads,
+                x='Date',
+                y='Count',
+                title=f"Daily Upload Activity - User {queried_user_id[:8]}...",
+                markers=True
+            )
+            fig_timeline.update_traces(line_color='#96CEB4', line_width=3)
+            fig_timeline.update_layout(
+                xaxis_title="Date",
+                yaxis_title="Number of Uploads",
+                height=400,
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font_color='white'
+            )
+            st.plotly_chart(fig_timeline, use_container_width=True)
+            
+    except Exception as e:
+        logger.error(f"Error creating user query charts: {e}")
+        st.error(f"Error creating user query charts: {e}")
+
 # UI Functions
 def show_login_page():
     """Display the login page"""
@@ -562,6 +720,117 @@ def show_login_page():
                         st.error("Failed to process authentication token")
                 else:
                     st.error("Authentication token not received")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def show_user_query_section():
+    """Display the user query section"""
+    st.markdown('<div class="category-section">', unsafe_allow_html=True)
+    st.subheader("🔍 Query Any User's Records")
+    st.markdown("Enter any user ID to view their records and analytics.")
+    
+    # User ID input with form
+    with st.form("user_query_form"):
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            query_user_id = st.text_input(
+                "User ID to Query:",
+                value=st.session_state.get("query_user_id", ""),
+                placeholder="Enter user ID (e.g., 2bcc18a7-03a4-40ea-ae9b-223607f239df)",
+                help="Enter the complete User ID to fetch their records"
+            )
+        
+        with col2:
+            st.markdown("<br>", unsafe_allow_html=True)  # Add spacing
+            query_submit = st.form_submit_button("🔍 Search", use_container_width=True)
+    
+    # Process query
+    if query_submit and query_user_id.strip():
+        st.session_state["query_user_id"] = query_user_id.strip()
+        st.session_state["last_queried_user"] = query_user_id.strip()
+        
+        # Fetch records for the queried user
+        token = st.session_state.get("token")
+        queried_records = fetch_any_user_records(query_user_id.strip(), token)
+        
+        if queried_records:
+            st.session_state["query_results"] = queried_records
+            st.success(f"Found {len(queried_records)} records for user {query_user_id[:8]}...")
+        else:
+            st.session_state["query_results"] = None
+            st.info(f"No records found for user {query_user_id[:8]}...")
+    
+    # Display results if available
+    if st.session_state.get("query_results") and st.session_state.get("last_queried_user"):
+        queried_records = st.session_state["query_results"]
+        queried_user_id = st.session_state["last_queried_user"]
+        
+        # Process and display the queried user's data
+        query_summary = summarize(queried_records)
+        
+        if query_summary:
+            st.subheader(f"📊 Analytics for User {queried_user_id[:8]}...")
+            
+            # Display summary statistics
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("Total Records", f"{query_summary['total_records']:,}")
+            
+            with col2:
+                if not query_summary["media_type"].empty:
+                    most_common_media = query_summary["media_type"].index[0]
+                    st.metric("Most Common Media", most_common_media)
+            
+            with col3:
+                if not query_summary["category"].empty:
+                    most_common_category = query_summary["category"].index[0]
+                    st.metric("Top Category", most_common_category)
+            
+            with col4:
+                if not query_summary["status"].empty:
+                    most_common_status = query_summary["status"].index[0]
+                    st.metric("Primary Status", most_common_status)
+            
+            st.divider()
+            
+            # Display charts for queried user
+            create_user_query_charts(query_summary, queried_user_id)
+            
+            # Display data table
+            st.subheader(f"📋 Records Table - User {queried_user_id[:8]}...")
+            df_display = query_summary['df'].copy()
+            
+            # Select relevant columns for display
+            display_columns = ['created_at', 'category', 'media_type', 'status']
+            if 'file_name' in df_display.columns:
+                display_columns.append('file_name')
+            
+            df_display = df_display[display_columns]
+            df_display.columns = [col.replace('_', ' ').title() for col in df_display.columns]
+            
+            # Add download button for the data
+            csv = df_display.to_csv(index=False)
+            st.download_button(
+                label=f"📥 Download CSV - User {queried_user_id[:8]}...",
+                data=csv,
+                file_name=f"user_records_{queried_user_id[:8]}.csv",
+                mime="text/csv"
+            )
+            
+            st.dataframe(df_display, use_container_width=True, height=400)
+            
+        else:
+            st.warning(f"Unable to process data for user {queried_user_id[:8]}...")
+    
+    # Clear results button
+    if st.session_state.get("query_results"):
+        if st.button("🗑️ Clear Query Results"):
+            st.session_state["query_results"] = None
+            st.session_state["last_queried_user"] = None
+            st.session_state["query_user_id"] = ""
+            st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -705,6 +974,11 @@ def show_dashboard():
                     st.warning(f"No records found for {selected_category} category.")
             
             st.markdown('</div>', unsafe_allow_html=True)
+            
+            st.divider()
+            
+            # User Query Section - NEW ADDITION
+            show_user_query_section()
             
         else:
             st.warning("Unable to process the fetched data.")
