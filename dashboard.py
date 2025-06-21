@@ -229,6 +229,51 @@ def fetch_any_user_records(query_user_id: str, token: str) -> List[Dict]:
         logger.error(f"Unexpected error fetching records for user {query_user_id}: {e}")
         st.error(f"Unexpected error: {e}")
         return []
+    
+def fetch_all_records(token: str) -> List[Dict]:
+    """Fetch all records from the database for overview"""
+    if not token:
+        st.error("Token is required")
+        return []
+        
+    # Remove user_id parameter to get all records
+    url = f"https://backend2.swecha.org/api/v1/records/?skip=0&limit=10000"
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    
+    try:
+        with st.spinner("🌐 Fetching database overview..."):
+            response = requests.get(url, headers=headers, timeout=60)  # Longer timeout for large data
+            response.raise_for_status()
+            
+            data = response.json()
+            if not isinstance(data, list):
+                logger.warning(f"Expected list, got {type(data)}")
+                st.warning("Unexpected data format received from server")
+                return []
+                
+            logger.info(f"Successfully fetched {len(data)} total records from database")
+            return data
+            
+    except requests.exceptions.Timeout:
+        st.error("Request timed out. The database might be large. Please try again.")
+        return []
+    except requests.exceptions.ConnectionError:
+        st.error("Unable to connect to the server. Please check your internet connection.")
+        return []
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            st.error("Authentication failed. Please log in again.")
+            st.session_state.authenticated = False
+        elif e.response.status_code == 403:
+            st.error("Access denied. You don't have permission to view database overview.")
+        else:
+            st.error(f"Failed to fetch database overview: HTTP {e.response.status_code}")
+        return []
+    except Exception as e:
+        logger.error(f"Unexpected error fetching database overview: {e}")
+        st.error(f"Unexpected error: {e}")
+        return []
+
 
 def validate_records_data(records: List[Dict]) -> bool:
     """Validate the structure of records data"""
@@ -657,6 +702,155 @@ def create_user_query_charts(summary: Dict, queried_user_id: str):
         logger.error(f"Error creating user query charts: {e}")
         st.error(f"Error creating user query charts: {e}")
 
+def create_database_overview_charts(summary: Dict):
+    """Create charts for database overview"""
+    if not summary:
+        st.warning("No database data available")
+        return
+    
+    try:
+        df = summary['df']
+        
+        # Database Statistics Cards
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("🗄️ Total Records", f"{summary['total_records']:,}")
+        
+        with col2:
+            if not summary["category"].empty:
+                total_categories = len(summary["category"])
+                st.metric("📂 Categories", f"{total_categories}")
+        
+        with col3:
+            if not summary["media_type"].empty:
+                total_media_types = len(summary["media_type"])
+                st.metric("🎬 Media Types", f"{total_media_types}")
+        
+        with col4:
+            # Calculate unique users
+            if 'user_id' in df.columns:
+                unique_users = df['user_id'].nunique()
+                st.metric("👥 Active Users", f"{unique_users:,}")
+            else:
+                st.metric("📊 Data Points", f"{len(df):,}")
+        
+        st.divider()
+        
+        # Create visualization columns
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Media Type Distribution
+            if not summary["media_type"].empty:
+                fig_media = px.pie(
+                    values=summary["media_type"].values,
+                    names=summary["media_type"].index,
+                    title="🎬 Database Media Type Distribution",
+                    color_discrete_sequence=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#F7DC6F', '#BB8FCE']
+                )
+                fig_media.update_traces(textposition='inside', textinfo='percent+label')
+                fig_media.update_layout(
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font_color='white',
+                    height=400
+                )
+                st.plotly_chart(fig_media, use_container_width=True)
+            
+            # Status Distribution
+            if not summary["status"].empty:
+                fig_status = px.bar(
+                    x=summary["status"].index,
+                    y=summary["status"].values,
+                    title="📈 Database Status Distribution",
+                    labels={'x': 'Status', 'y': 'Count'},
+                    color=summary["status"].values,
+                    color_continuous_scale='viridis'
+                )
+                fig_status.update_layout(
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font_color='white',
+                    height=400
+                )
+                st.plotly_chart(fig_status, use_container_width=True)
+        
+        with col2:
+            # Top Categories
+            if not summary["category"].empty:
+                top_categories = summary["category"].head(15)
+                fig_categories = px.bar(
+                    x=top_categories.values,
+                    y=top_categories.index,
+                    orientation='h',
+                    title="📂 Top 15 Categories in Database",
+                    labels={'x': 'Count', 'y': 'Category'},
+                    color=top_categories.values,
+                    color_continuous_scale='plasma'
+                )
+                fig_categories.update_layout(
+                    yaxis={'categoryorder': 'total ascending'},
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font_color='white',
+                    height=800
+                )
+                st.plotly_chart(fig_categories, use_container_width=True)
+        
+        # Timeline Chart
+        if not summary["uploads_per_day"].empty:
+            st.subheader("📅 Database Upload Timeline")
+            daily_uploads = summary["uploads_per_day"].reset_index()
+            daily_uploads.columns = ['Date', 'Count']
+            
+            fig_timeline = px.line(
+                daily_uploads,
+                x='Date',
+                y='Count',
+                title="📈 Daily Upload Activity - Entire Database",
+                markers=True
+            )
+            fig_timeline.update_traces(line_color='#F39C12', line_width=3)
+            fig_timeline.update_layout(
+                xaxis_title="Date",
+                yaxis_title="Number of Uploads",
+                height=400,
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font_color='white'
+            )
+            st.plotly_chart(fig_timeline, use_container_width=True)
+        
+        # User Activity Heatmap (if user_id is available)
+        if 'user_id' in df.columns:
+            st.subheader("👥 User Activity Overview")
+            user_activity = df.groupby('user_id').size().sort_values(ascending=False).head(20)
+            
+            fig_users = px.bar(
+                x=user_activity.values,
+                y=[f"User {uid[:8]}..." for uid in user_activity.index],
+                orientation='h',
+                title="🏆 Top 20 Most Active Users",
+                labels={'x': 'Records Count', 'y': 'User ID'},
+                color=user_activity.values,
+                color_continuous_scale='sunset'
+            )
+            fig_users.update_layout(
+                yaxis={'categoryorder': 'total ascending'},
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font_color='white',
+                height=600
+            )
+            st.plotly_chart(fig_users, use_container_width=True)
+            
+    except Exception as e:
+        logger.error(f"Error creating database overview charts: {e}")
+        st.error(f"Error creating database overview charts: {e}")
+
+
+
 # UI Functions
 def show_login_page():
     """Display the login page"""
@@ -752,7 +946,9 @@ def show_user_query_section():
         
         # Fetch records for the queried user
         token = st.session_state.get("token")
-        queried_records = fetch_any_user_records(query_user_id.strip(), token)
+        
+        with st.spinner(f"🔍 Searching records for user {query_user_id[:8]}..."):
+            queried_records = fetch_any_user_records(query_user_id.strip(), token)
         
         if queried_records:
             st.session_state["query_results"] = queried_records
@@ -834,6 +1030,116 @@ def show_user_query_section():
     
     st.markdown('</div>', unsafe_allow_html=True)
 
+def show_database_overview_section():
+    """Display the database overview section"""
+    st.markdown('<div class="category-section">', unsafe_allow_html=True)
+    st.subheader("🌐 Database Overview")
+    st.markdown("View comprehensive analytics for the entire database across all users.")
+    
+    # Add warning about data size
+    st.info("⚠️ **Note**: This section loads data from the entire database and may take longer to load.")
+    
+    # Fetch database overview button
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        if st.button("🔍 Load Database Overview", use_container_width=True, type="primary"):
+            token = st.session_state.get("token")
+            
+            if not token:
+                st.error("Authentication required. Please log in again.")
+                return
+            
+            # Fetch all records
+            all_records = fetch_all_records(token)
+            
+            if all_records:
+                st.session_state["database_overview"] = all_records
+                st.success(f"✅ Loaded {len(all_records):,} records from database!")
+            else:
+                st.session_state["database_overview"] = None
+                st.error("Failed to load database overview.")
+    
+    # Display results if available
+    if st.session_state.get("database_overview"):
+        all_records = st.session_state["database_overview"]
+        
+        # Process database summary
+        with st.spinner("📊 Processing database analytics..."):
+            database_summary = summarize(all_records)
+        
+        if database_summary:
+            st.subheader("📈 Database Analytics Dashboard")
+            
+            # Show last updated info
+            st.caption(f"📅 Data loaded: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Total Records: {len(all_records):,}")
+            
+            # Display database overview charts
+            create_database_overview_charts(database_summary)
+            
+            # Additional insights
+            st.subheader("🔍 Database Insights")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("#### 📊 Quick Stats")
+                df = database_summary['df']
+                
+                # Calculate some interesting stats
+                avg_records_per_day = len(df) / max(len(database_summary["uploads_per_day"]), 1)
+                most_active_day = database_summary["uploads_per_day"].idxmax() if not database_summary["uploads_per_day"].empty else "N/A"
+                peak_uploads = database_summary["uploads_per_day"].max() if not database_summary["uploads_per_day"].empty else 0
+                
+                st.metric("📈 Avg Records/Day", f"{avg_records_per_day:.1f}")
+                st.metric("🏆 Peak Upload Day", str(most_active_day))
+                st.metric("🔥 Peak Daily Uploads", f"{peak_uploads}")
+            
+            with col2:
+                st.markdown("#### 🎯 Category Insights")
+                if not database_summary["category"].empty:
+                    top_category = database_summary["category"].index[0]
+                    top_category_count = database_summary["category"].iloc[0]
+                    category_percentage = (top_category_count / len(df)) * 100
+                    
+                    st.metric("🥇 Top Category", top_category)
+                    st.metric("📊 Top Category Count", f"{top_category_count:,}")
+                    st.metric("📈 Top Category %", f"{category_percentage:.1f}%")
+            
+            # Download option for database overview
+            st.subheader("💾 Export Database Overview")
+            
+            # Prepare export data
+            export_df = database_summary['df'].copy()
+            export_columns = ['created_at', 'category', 'media_type', 'status']
+            if 'user_id' in export_df.columns:
+                export_columns.append('user_id')
+            
+            export_df = export_df[export_columns]
+            export_df.columns = [col.replace('_', ' ').title() for col in export_df.columns]
+            
+            csv_data = export_df.to_csv(index=False)
+            
+            st.download_button(
+                label="📥 Download Database Overview (CSV)",
+                data=csv_data,
+                file_name=f"database_overview_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+            
+        else:
+            st.error("Failed to process database overview data.")
+    
+    # Clear database overview
+    if st.session_state.get("database_overview"):
+        if st.button("🗑️ Clear Database Overview"):
+            st.session_state["database_overview"] = None
+            st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
 def show_dashboard():
     """Display the main dashboard after authentication"""
     # Apply dark theme CSS
@@ -912,7 +1218,25 @@ def show_dashboard():
     token = st.session_state["token"]
     
     # Fetch records
+    # Enhanced loading for main records
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+
+    status_text.text("🔄 Connecting to server...")
+    progress_bar.progress(25)
+
+    status_text.text("📡 Fetching your records...")
+    progress_bar.progress(50)
+
     records = fetch_records(user_id, token)
+
+    progress_bar.progress(100)
+    status_text.text("✅ Records loaded successfully!")
+
+    # Clear the progress indicators
+    progress_bar.empty()
+    status_text.empty()
+
     
     if records:
         # Overall summary
@@ -979,6 +1303,17 @@ def show_dashboard():
             
             # User Query Section - NEW ADDITION
             show_user_query_section()
+            
+            st.divider()
+            
+            # User Query Section
+            show_user_query_section()
+            
+            st.divider()
+            
+            # Database Overview Section - ADD THIS
+            show_database_overview_section()
+
             
         else:
             st.warning("Unable to process the fetched data.")
