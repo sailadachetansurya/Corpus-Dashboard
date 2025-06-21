@@ -26,32 +26,63 @@ token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTA1OTcyNjEsInN1YiI6Ij
 def fetch_records(user_id, token):
     url = f"https://backend2.swecha.org/api/v1/records/?user_id={user_id}&skip=0&limit=1000"
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    try:
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        st.error(f"Failed to fetch records: {e}")
+        return []
+    except Exception as e:
+        st.error(f"Unexpected error: {e}")
+        return []
 
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return response.json()
 
 
 def summarize(records):
-    df = pd.DataFrame(records)
+    if not records or not isinstance(records, list):
+        st.warning("No valid records data to process")
+        return None
+    
+    try:
+        df = pd.DataFrame(records)
+        
+        # Check if required columns exist
+        required_columns = ['category_id', 'created_at', 'media_type', 'status']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            st.error(f"Missing required columns: {missing_columns}")
+            return None
+            
+        # Map category_id to category name using CATEGORIES
+        category_id_to_name = {v: k for k, v in CATEGORIES.items()}
+        df["category"] = df["category_id"].map(category_id_to_name).fillna("Unknown")
+        df["created_at"] = pd.to_datetime(df["created_at"], errors='coerce').dt.date
+        
+        # Remove rows with invalid dates
+        df = df.dropna(subset=['created_at'])
+        
+        if df.empty:
+            st.warning("No valid data after processing")
+            return None
+    
+    
+    
+        media_type_counts = df["media_type"].value_counts()
+        status_counts = df["status"].value_counts()
+        category_counts = df["category"].value_counts()
+        uploads_per_day = df.groupby("created_at").size()
 
-    # Map category_id to category name using CATEGORIES
-    category_id_to_name = {v: k for k, v in CATEGORIES.items()}
-    df["category"] = df["category_id"].map(category_id_to_name).fillna("Unknown")
-
-    df["created_at"] = pd.to_datetime(df["created_at"]).dt.date
-    media_type_counts = df["media_type"].value_counts()
-    status_counts = df["status"].value_counts()
-    category_counts = df["category"].value_counts()
-    uploads_per_day = df.groupby("created_at").size()
-
-    return {
-        "media_type": media_type_counts,
-        "status": status_counts,
-        "category": category_counts,
-        "uploads_per_day": uploads_per_day,
-        "df": df,  # Return full DataFrame for later use
-    }
+        return {
+            "media_type": media_type_counts,
+            "status": status_counts,
+            "category": category_counts,
+            "uploads_per_day": uploads_per_day,
+            "df": df,  # Return full DataFrame for later use
+        }
+    except Exception as e:
+        st.error(f"Error processing data: {e}")
+        return None
 
 
 def plot_summary(summary):
@@ -198,12 +229,26 @@ def login_user(phone: str, password: str) -> Optional[Dict]:
             "https://backend2.swecha.org/api/v1/auth/login",
             json={"phone": phone, "password": password},
             headers={"accept": "application/json", "Content-Type": "application/json"},
+            timeout=30
         )
         response.raise_for_status()
         return response.json()
-    except Exception as e:
-        st.error(f"Login failed: {e}")
+    except requests.exceptions.Timeout:
+        st.error("Login request timed out. Please try again.")
         return None
+    except requests.exceptions.ConnectionError:
+        st.error("Unable to connect to the server. Please check your internet connection.")
+        return None
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            st.error("Invalid phone number or password.")
+        else:
+            st.error(f"Login failed with status {e.response.status_code}")
+        return None
+    except Exception as e:
+        st.error(f"Unexpected error during login: {e}")
+        return None
+
 
 
 def show_login_page():
@@ -219,13 +264,21 @@ def show_login_page():
                 token = login_result.get("access_token")
                 if token:
                     # decode user_id from token
-                    payload = token.split(".")[1] + "=="
-                    import base64
-                    import json
+                    try:
+                    # decode user_id from token
+                        payload = token.split(".")[1] + "=="
+                        import base64
+                        import json
+                        payload_decoded = json.loads(base64.b64decode(payload).decode("utf-8"))
+                        user_id = payload_decoded.get("sub")
+                        if not user_id:
+                            st.error("Invalid token: user ID not found")
+                            return
+                        st.session_state["user_id"] = user_id
+                    except (IndexError, json.JSONDecodeError, base64.binascii.Error) as e:
+                        st.error(f"Failed to decode token: {e}")
+                        return
 
-                    payload_decoded = json.loads(
-                        base64.b64decode(payload).decode("utf-8")
-                    )
                     st.session_state["user_id"] = payload_decoded.get("sub")
                     st.session_state["authenticated"] = True
                     st.session_state["username"] = phone
