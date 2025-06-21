@@ -433,7 +433,7 @@ def show_dashboard():
         st.dataframe(df, use_container_width=True)
 
     st.header("Category Filter")
-    records = fetch_records(user_id)
+    records = fetch_records(user_id_input, token)
     df = pd.DataFrame(records)
     df["category"] = (
         df["category_id"].map({v: k for k, v in CATEGORIES.items()}).fillna("Unknown")
