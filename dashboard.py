@@ -60,12 +60,14 @@ def initialize_session_state():
         "selected_category": "Fables",
         "query_user_id": "",
         "query_results": None,
-        "last_queried_user": None
+        "last_queried_user": None,
+        "database_overview": None  # ADD THIS LINE
     }
     
     for var, default_value in session_vars.items():
         if var not in st.session_state:
             st.session_state[var] = default_value
+
 
 # Authentication Functions
 def decode_jwt_token(token: str) -> Optional[Dict]:
@@ -236,24 +238,23 @@ def fetch_all_records(token: str) -> List[Dict]:
         st.error("Token is required")
         return []
         
-    # Remove user_id parameter to get all records
-    url = f"https://backend2.swecha.org/api/v1/records/?skip=0&limit=10000"
+    # The API supports fetching all records without user_id parameter
+    url = f"https://backend2.swecha.org/api/v1/records/?skip=0&limit=1000"
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     
     try:
-        with st.spinner("🌐 Fetching database overview..."):
-            response = requests.get(url, headers=headers, timeout=60)  # Longer timeout for large data
-            response.raise_for_status()
+        response = requests.get(url, headers=headers, timeout=60)
+        response.raise_for_status()
+        
+        data = response.json()
+        if not isinstance(data, list):
+            logger.warning(f"Expected list, got {type(data)}")
+            st.warning("Unexpected data format received from server")
+            return []
             
-            data = response.json()
-            if not isinstance(data, list):
-                logger.warning(f"Expected list, got {type(data)}")
-                st.warning("Unexpected data format received from server")
-                return []
-                
-            logger.info(f"Successfully fetched {len(data)} total records from database")
-            return data
-            
+        logger.info(f"Successfully fetched {len(data)} total records from database")
+        return data
+        
     except requests.exceptions.Timeout:
         st.error("Request timed out. The database might be large. Please try again.")
         return []
@@ -266,6 +267,8 @@ def fetch_all_records(token: str) -> List[Dict]:
             st.session_state.authenticated = False
         elif e.response.status_code == 403:
             st.error("Access denied. You don't have permission to view database overview.")
+        elif e.response.status_code == 422:
+            st.error("Invalid request parameters. Please try again.")
         else:
             st.error(f"Failed to fetch database overview: HTTP {e.response.status_code}")
         return []
@@ -273,6 +276,7 @@ def fetch_all_records(token: str) -> List[Dict]:
         logger.error(f"Unexpected error fetching database overview: {e}")
         st.error(f"Unexpected error: {e}")
         return []
+
 
 
 def validate_records_data(records: List[Dict]) -> bool:
@@ -1298,11 +1302,6 @@ def show_dashboard():
                     st.warning(f"No records found for {selected_category} category.")
             
             st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.divider()
-            
-            # User Query Section - NEW ADDITION
-            show_user_query_section()
             
             st.divider()
             
