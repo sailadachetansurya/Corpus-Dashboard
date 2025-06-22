@@ -107,14 +107,17 @@ streamlit run dashboard.py
 
 ## 🗂️ Project Structure
 
-corpus-dashboard/
-│
-├── dashboard.py # Main application file
-├── requirements.txt # Python dependencies
-├── README.md # Project documentation
-└── config/
-├── categories.json # Category mappings (future enhancement)
-└── settings.py # Configuration settings (future enhancement)
+## 🗂️ Project Structure
+
+    corpus-dashboard/
+    │
+    ├── dashboard.py              # Main application file
+    ├── requirements.txt          # Python dependencies
+    ├── README.md                # Project documentation
+    └── config/
+        ├── categories.json      # Category mappings (future enhancement)
+        └── settings.py          # Configuration settings (future enhancement)
+
 
 
 ## 🔐 Environment Variables
