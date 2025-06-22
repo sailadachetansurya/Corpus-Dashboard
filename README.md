@@ -97,10 +97,10 @@ pip package manager
 ### Install Dependencies
 
 1. via REQUIREMENTS.txt
-    Install dependencies with: pip install -r requirements.txt
+  Install dependencies with: pip install -r requirements.txt
 
 2. via Terminal / command line
-    pip install streamlit pandas numpy plotly requests matplotlib seaborn
+  pip install streamlit pandas numpy plotly requests matplotlib seaborn
 
 ### Run the Application
 streamlit run dashboard.py
