@@ -1,93 +1,216 @@
-# Corpus Dashboard
+# Corpus Records Dashboard
+
+A comprehensive, interactive dashboard built with Streamlit for managing and analyzing corpus data records. This application provides authentication, data visualization, and analytics capabilities for corpus management systems.
+
+## 🚀 Features
+
+### Authentication & Security
+- **JWT-based Authentication**: Secure login system using phone number and password
+- **Token Management**: Automatic token decoding and session management
+- **Session State Persistence**: Maintains user sessions across page refreshes
+- **Login Attempt Limiting**: Security measures to prevent brute force attacks
+
+### Dashboard Analytics
+- **Personal Dashboard**: View your own records with comprehensive analytics
+- **User Query System**: Search and analyze any user's records by User ID
+- **Database Overview**: System-wide analytics across all users and records
+- **Category-Specific Analysis**: Detailed insights for individual categories
+
+### Data Visualization
+- **Interactive Charts**: Built with Plotly for dynamic, responsive visualizations
+- **Statistical Summaries**: Matplotlib-powered summary plots and distributions
+- **Real-time Updates**: Live data fetching and processing
+- **Multiple Chart Types**: Pie charts, bar charts, line graphs, and timeline visualizations
+
+### User Interface
+- **Dark Theme**: Professional dark mode interface
+- **Responsive Design**: Optimized for various screen sizes
+- **Loading Indicators**: Visual feedback during data processing
+- **Error Handling**: Comprehensive error management with user-friendly messages
+
+### Data Management
+- **Category Mapping**: Dynamic category ID to name conversion
+- **Data Validation**: Robust data structure validation and error recovery
+- **Export Functionality**: CSV download capabilities for all data views
+- **Pagination Support**: Efficient handling of large datasets
+
+## 🛠️ Tech Stack
+
+### Frontend Framework
+- **Streamlit** - Main application framework for rapid web app development
+
+### Data Processing & Analytics
+- **Pandas** - Data manipulation and analysis
+- **NumPy** - Numerical computing and array operations
+
+### Visualization Libraries
+- **Plotly Express** - Interactive web-based visualizations
+- **Plotly Graph Objects** - Advanced chart customization
+- **Matplotlib** - Statistical plotting and data visualization
+- **Seaborn** - Enhanced statistical data visualization
+
+### Authentication & API
+- **Requests** - HTTP library for API communication
+- **JWT (JSON Web Tokens)** - Secure authentication tokens
+- **Base64** - Token encoding/decoding
+
+### Development & Utilities
+- **Python 3.7+** - Core programming language
+- **Logging** - Application monitoring and debugging
+- **DateTime** - Time and date handling
+- **Collections** - Specialized data structures
+
+## 📊 Dashboard Sections
+
+### 1. Personal Analytics
+- Total records uploaded
+- Media type distribution (audio, video, text, image)
+- Category breakdown
+- Upload timeline and trends
+- Status distribution (pending, uploaded, etc.)
+
+### 2. Category Analysis
+- Dropdown selection for 15+ categories (Fables, Events, Music, Places, etc.)
+- Category-specific statistics and visualizations
+- Media type distribution within categories
+- Timeline analysis for selected categories
+
+### 3. User Query System
+- Search any user by User ID
+- Comprehensive analytics for queried users
+- Comparative analysis capabilities
+- Export functionality for queried data
+
+### 4. Database Overview
+- System-wide statistics across all users
+- Top categories and media types
+- User activity rankings
+- Database growth trends and insights
+
+## 🔧 Installation & Setup
+
+### Prerequisites
+Python 3.7 or higher
+pip package manager
 
 
+### Install Dependencies
 
-## Getting started
+pip install streamlit pandas numpy plotly requests matplotlib seaborn
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+### Run the Application
+streamlit run dashboard.py
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+### Access the Dashboard
+- Local URL: `http://localhost:8501`
+- Network URL: `http://[your-ip]:8501`
 
-## Add your files
+## 🗂️ Project Structure
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+corpus-dashboard/
+│
+├── dashboard.py # Main application file
+├── requirements.txt # Python dependencies
+├── README.md # Project documentation
+└── config/
+├── categories.json # Category mappings (future enhancement)
+└── settings.py # Configuration settings (future enhancement)
 
-```
-cd existing_repo
-git remote add origin https://code.swecha.org/ChetanSurya/corpus-dashboard.git
-git branch -M main
-git push -uf origin main
-```
 
-## Integrate with your tools
+## 🔐 Environment Variables
 
-- [ ] [Set up project integrations](https://code.swecha.org/ChetanSurya/corpus-dashboard/-/settings/integrations)
+#### API Configuration
+API_BASE_URL=https://backend2.swecha.org/api/v1
+DEFAULT_TIMEOUT=30
 
-## Collaborate with your team
+#### Authentication
+MAX_LOGIN_ATTEMPTS=3
+SESSION_TIMEOUT=3600
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
 
-## Test and Deploy
+## 📈 API Integration
 
-Use the built-in continuous integration in GitLab.
+### Endpoints Used
+- `POST /auth/login` - User authentication
+- `GET /records/` - Fetch records with filtering options
+  - Parameters: `user_id`, `category_id`, `media_type`, `skip`, `limit`
+  - Supports pagination up to 1000 records per request
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+### Data Structure
+{
+"title": "string",
+"description": "string",
+"media_type": "text|audio|video|image",
+"file_url": "string",
+"file_name": "string",
+"file_size": 0,
+"status": "pending|uploaded|failed",
+"location": {
+"latitude": 17.385,
+"longitude": 78.4867
+},
+"uid": "uuid",
+"user_id": "uuid",
+"category_id": "uuid",
+"created_at": "timestamp",
+"updated_at": "timestamp"
+}
 
-***
 
-# Editing this README
+## 🚀 Future Enhancements
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### Short-term Goals (Next 3 months)
+- **Advanced Filtering**: Date range filters, status filters, location-based filtering
+- **Real-time Updates**: WebSocket integration for live data updates
+- **Export Enhancements**: PDF reports, Excel exports with charts
+- **User Management**: Admin panel for user management and permissions
 
-## Suggestions for a good README
+### Medium-term Goals (6 months)
+- **Machine Learning Integration**: Predictive analytics and trend forecasting
+- **Advanced Visualizations**: Geographic mapping, network graphs, heatmaps
+- **Collaboration Features**: Shared dashboards, comments, and annotations
+- **Mobile Optimization**: Progressive Web App (PWA) capabilities
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
 
-## Name
-Choose a self-explaining name for your project.
+## 🤝 Contributing
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### Development Setup
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### Code Standards
+- Follow PEP 8 style guidelines
+- Add comprehensive docstrings
+- Include error handling for all API calls
+- Write unit tests for new features
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+## 📝 License
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## 🐛 Known Issues
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+- Large datasets (>1000 records) may experience slower loading times
+- Database overview requires appropriate API permissions
+- Some visualizations may not render properly on very small screens
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+## 📞 Support
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+For support, please contact:
+- Email: support@swecha.org
+- Documentation: [Project Wiki](link-to-wiki)[yet to be configured]
+- Issues: [GitHub Issues](link-to-issues)[yet to be configured]
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+## 🏆 Acknowledgments
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+- **Streamlit Team** for the amazing framework
+- **Plotly** for interactive visualization capabilities
+- **Swecha Organization** for the corpus data API
+- **Open Source Community** for the various libraries used
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+---
 
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+**Built with ❤️ using Streamlit and Python**
