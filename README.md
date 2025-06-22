@@ -96,14 +96,16 @@ pip package manager
 
 ### Install Dependencies
 
-1. via REQUIREMENTS.txt
-  Install dependencies with: pip install -r requirements.txt
+**via REQUIREMENTS.txt**  
+Install dependencies with: `pip install -r requirements.txt`
 
-2. via Terminal / command line
-  pip install streamlit pandas numpy plotly requests matplotlib seaborn
+**via Terminal / command line**  
+`pip install streamlit pandas numpy plotly requests matplotlib seaborn`
 
-### Run the Application
-streamlit run dashboard.py
+
+### Run the Application  
+In Terminal run:  
+`streamlit run dashboard.py`
 
 ### Access the Dashboard
 - Local URL: `http://localhost:8501`
