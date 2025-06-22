@@ -1,93 +1,398 @@
-# corpus dashboard
+# 🚀 Advanced Corpus Records Dashboard
 
+<div align="center">
 
+![Dashboard Banner](https://img.shields.io/badge/Dashboard-Corpus%20Records-blueviolet?style=for-the-badge&logo=streamlit)
+![Python](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red?style=for-the-badge&logo=streamlit)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-## Getting started
+**An interactive, AI-enhanced dashboard built with Streamlit to visualize and analyze corpus records data with stunning UI and real-time analytics.**
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+[🚀 Quick Start](#-quick-start) • [✨ Features](#-features) • [📊 Demo](#-demo) • [🛠️ Installation](#️-installation) • [📖 Documentation](#-documentation)
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+</div>
 
-## Add your files
+---
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+## 🎯 Overview
+
+Transform your corpus records data into actionable insights with our cutting-edge dashboard featuring:
+
+- **🔐 Secure Authentication** - Multi-mode login system
+- **📊 Real-time Analytics** - Live data visualization and trends
+- **🌐 Multi-user Support** - Individual and comparative analysis
+- **🎨 Modern UI** - Glassmorphism design with dark mode
+- **🧠 AI Insights** - Smart recommendations and pattern detection
+
+## ✨ Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 🔐 **Authentication & Security**
+- ✅ Secure login system
+- 🔑 Demo mode for testing
+- 🛡️ User session management
+- 📱 Phone number verification
+
+### 📊 **Analytics & Visualization**
+- 📈 Interactive charts & graphs
+- 🎯 Real-time data updates
+- 📊 Plotly, Seaborn, Altair integration
+- 🔍 Advanced filtering options
+
+</td>
+<td width="50%">
+
+### 🌐 **Multi-Mode Dashboard**
+- 🏠 Personal records view
+- 👥 User comparison tool
+- 🔍 Cross-user data queries
+- 📋 Global database overview
+
+### 🎨 **Modern UI/UX**
+- 🌙 Dark mode support
+- ✨ Glassmorphism effects
+- 📱 Responsive design
+- 🎭 Customizable themes
+
+</td>
+</tr>
+</table>
+
+## 🚀 Quick Start
+
+### 1. **Clone the Repository**
+```bash
+git clone https://github.com/yourusername/corpus-records-dashboard.git
+cd corpus-records-dashboard
+```
+
+### 2. **Install Dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+### 3. **Launch the Dashboard**
+```bash
+streamlit run dashboard.py
+```
+
+### 4. **Access the App**
+🌐 Open your browser and navigate to: `http://localhost:8501`
+
+## 🛠️ Installation
+
+<details>
+<summary><b>📋 System Requirements</b></summary>
+
+- Python 3.8 or higher
+- 4GB RAM minimum
+- Modern web browser
+- Internet connection for API features
+
+</details>
+
+<details>
+<summary><b>🐍 Python Dependencies</b></summary>
+
+```txt
+streamlit>=1.28.0
+pandas>=1.5.0
+numpy>=1.21.0
+plotly>=5.15.0
+requests>=2.28.0
+matplotlib>=3.5.0
+seaborn>=0.11.0
+wordcloud>=1.9.0
+altair>=4.2.0
+```
+
+</details>
+
+<details>
+<summary><b>🔧 Advanced Setup</b></summary>
+
+For development or advanced usage:
+
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install in development mode
+pip install -e .
+
+# Install optional dependencies
+pip install jupyter notebook pytest
+```
+
+</details>
+
+## 📊 Demo
+
+### 🎥 **Dashboard Preview**
+
+| Feature | Preview |
+|---------|---------|
+| 🏠 **Main Dashboard** | Interactive charts, metrics, and real-time updates |
+| 🔍 **User Query** | Search and analyze specific user data |
+| 📊 **Global Overview** | Database-wide statistics and trends |
+| ⚖️ **User Comparison** | Side-by-side user analytics |
+
+### 🎮 **Interactive Features**
+
+- **Real-time Filtering**: Filter data by date, category, media type
+- **Export Options**: Download in CSV, Excel, or JSON formats
+- **Smart Insights**: AI-generated recommendations and patterns
+- **Responsive Charts**: Zoom, pan, and interact with visualizations
+
+## 🔑 Authentication
+
+<div align="center">
+
+| Mode | Description | Access Level |
+|------|-------------|--------------|
+| 🔐 **Login** | Full access with credentials | Complete dashboard |
+| 🎭 **Demo** | Sample data exploration | Limited features |
+
+</div>
+
+**Login Flow:**
+1. Enter your phone number
+2. Provide password
+3. System validates via Swecha backend API
+4. Access granted to personalized dashboard
+
+## 🧭 Navigation Guide
+
+### 🏠 **My Records**
+```
+📊 Personal Analytics
+├── 📈 Upload Trends
+├── 📋 Category Breakdown  
+├── 🎯 Success Rates
+└── 📅 Activity Timeline
+```
+
+### 🔍 **User Query**
+```
+👤 User Analysis
+├── 🆔 User ID Search
+├── 📊 Performance Metrics
+├── 📈 Trend Analysis
+└── 📑 Detailed Reports
+```
+
+### 🌐 **Database Overview**
+```
+🗃️ Global Statistics
+├── 👥 Total Users
+├── 📊 Overall Metrics
+├── 🏆 Top Performers
+└── 📈 System Trends
+```
+
+### ⚖️ **Compare Users**
+```
+🔄 User Comparison
+├── 📊 Side-by-side Charts
+├── 📈 Performance Metrics
+├── 🎯 Relative Analysis
+└── 📑 Comparison Reports
+```
+
+## 📤 Export & Download
+
+<div align="center">
+
+| Format | Features | Use Case |
+|--------|----------|----------|
+| 📄 **CSV** | Raw data, lightweight | Data analysis, Excel import |
+| 📊 **Excel** | Formatted sheets, charts | Reporting, presentations |
+| 📋 **JSON** | Structured data | API integration, development |
+
+</div>
+
+## 🧠 Smart Insights
+
+Our AI-powered analytics engine provides:
+
+- 🕒 **Peak Activity Analysis** - Optimal upload times
+- 📊 **Success Rate Optimization** - Performance improvement tips
+- 🎯 **Category Insights** - Content diversity recommendations
+- 📈 **Growth Tracking** - Weekly/monthly progress analysis
+- 🏆 **Performance Scoring** - Comparative rankings
+
+## 🎨 Customization
+
+<details>
+<summary><b>🎭 Theme Customization</b></summary>
+
+```python
+# Modify in dashboard.py
+THEME_CONFIG = {
+    'primary_color': '#FF6B6B',
+    'background_color': '#0E1117',
+    'secondary_background': '#262730',
+    'text_color': '#FAFAFA'
+}
+```
+
+</details>
+
+<details>
+<summary><b>🔧 API Configuration</b></summary>
+
+```python
+# Update API endpoints
+API_CONFIG = {
+    'base_url': 'https://your-api-endpoint.com',
+    'timeout': 30,
+    'retry_attempts': 3
+}
+```
+
+</details>
+
+<details>
+<summary><b>📊 Chart Customization</b></summary>
+
+```python
+# Modify chart themes in apply_advanced_styling()
+CHART_THEME = {
+    'plotly_theme': 'plotly_dark',
+    'color_palette': ['#FF6B6B', '#4ECDC4', '#45B7D1'],
+    'font_family': 'Arial, sans-serif'
+}
+```
+
+</details>
+
+## 📁 Project Structure
 
 ```
-cd existing_repo
-git remote add origin https://code.swecha.org/BITS-PS1-2025/corpus-dashboard.git
-git branch -M main
-git push -uf origin main
+corpus-records-dashboard/
+│
+├── 📄 dashboard.py          # Main Streamlit application
+├── 📋 requirements.txt      # Python dependencies
+├── 📖 README.md            # This file
+├── 🎨 assets/              # Static assets (optional)
+│   ├── 🖼️ images/
+│   └── 🎨 styles/
+├── 🧪 tests/               # Unit tests (optional)
+└── 📚 docs/                # Documentation (optional)
 ```
 
-## Integrate with your tools
+## 🚀 Deployment
 
-- [ ] [Set up project integrations](https://code.swecha.org/BITS-PS1-2025/corpus-dashboard/-/settings/integrations)
+<details>
+<summary><b>☁️ Streamlit Cloud</b></summary>
 
-## Collaborate with your team
+1. Push your code to GitHub
+2. Connect to [Streamlit Cloud](https://streamlit.io/cloud)
+3. Deploy with one click
+4. Share your app URL
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+</details>
 
-## Test and Deploy
+<details>
+<summary><b>🐳 Docker Deployment</b></summary>
 
-Use the built-in continuous integration in GitLab.
+```dockerfile
+FROM python:3.9-slim
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 
-***
+COPY . .
 
-# Editing this README
+EXPOSE 8501
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+CMD ["streamlit", "run", "dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
+```
 
-## Suggestions for a good README
+</details>
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+<details>
+<summary><b>🌐 Heroku Deployment</b></summary>
 
-## Name
-Choose a self-explaining name for your project.
+```bash
+# Install Heroku CLI and login
+heroku create your-app-name
+git push heroku main
+heroku open
+```
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+</details>
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+## 🤝 Contributing
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+We welcome contributions! Please follow these steps:
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+1. 🍴 Fork the repository
+2. 🌟 Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. 💫 Commit your changes (`git commit -m 'Add amazing feature'`)
+4. 🚀 Push to the branch (`git push origin feature/amazing-feature`)
+5. 🎉 Open a Pull Request
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## 📖 Documentation
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+- 📚 [API Documentation](docs/api.md)
+- 🎨 [Styling Guide](docs/styling.md)
+- 🔧 [Configuration Options](docs/configuration.md)
+- 🐛 [Troubleshooting](docs/troubleshooting.md)
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+## 🐛 Troubleshooting
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+<details>
+<summary><b>Common Issues</b></summary>
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+**🔴 Port Already in Use**
+```bash
+streamlit run dashboard.py --server.port 8502
+```
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+**🔴 Module Not Found**
+```bash
+pip install --upgrade -r requirements.txt
+```
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+**🔴 API Connection Issues**
+- Check internet connection
+- Verify API endpoint URLs
+- Confirm authentication credentials
 
-## License
-For open source projects, say how it is licensed.
+</details>
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## 🧩 Powered By
+
+<div align="center">
+
+[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Plotly](https://img.shields.io/badge/Plotly-239120?style=flat-square&logo=plotly&logoColor=white)](https://plotly.com/)
+[![Pandas](https://img.shields.io/badge/Pandas-2C2D72?style=flat-square&logo=pandas&logoColor=white)](https://pandas.pydata.org/)
+[![NumPy](https://img.shields.io/badge/NumPy-777BB4?style=flat-square&logo=numpy&logoColor=white)](https://numpy.org/)
+[![Altair](https://img.shields.io/badge/Altair-FF6B6B?style=flat-square&logo=altair&logoColor=white)](https://altair-viz.github.io/)
+
+</div>
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+
+---
+
+<div align="center">
+
+**Made  by [Samanyu](https://code.swecha.org/Samanyu1808) & [Chetan](https://code.swecha.org/ChetanSurya)**
+
+🌟 **Star this repo if you find it useful!** 🌟
+
+[⬆️ Back to Top](#-advanced-corpus-records-dashboard)
+
+</div>
