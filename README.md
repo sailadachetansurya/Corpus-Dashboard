@@ -111,7 +111,6 @@ In Terminal run:
 - Local URL: `http://localhost:8501`
 - Network URL: `http://[your-ip]:8501`
 
-## 🗂️ Project Structure
 
 ## 🗂️ Project Structure
 
