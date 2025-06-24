@@ -3,16 +3,20 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import requests
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import os
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import seaborn as sns
 import base64
 import json
 import logging
+import time
+from wordcloud import WordCloud
+import altair as alt
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -68,18 +72,16 @@ def initialize_session_state():
         if var not in st.session_state:
             st.session_state[var] = default_value
 
-
-# Authentication Functions
+# Authentication Functions (keeping existing ones with enhancements)
 def decode_jwt_token(token: str) -> Optional[Dict]:
-    """Decode JWT token to extract user information"""
+    """Enhanced JWT token decoder with better error handling"""
     try:
-        # Split token and get payload
         parts = token.split(".")
         if len(parts) != 3:
             logger.error("Invalid JWT token format")
             return None
             
-        payload = parts[1] + "=="  # Add padding
+        payload = parts[1] + "=="
         payload_decoded = json.loads(base64.b64decode(payload).decode("utf-8"))
         
         user_id = payload_decoded.get("sub")
@@ -147,14 +149,14 @@ def fetch_records(user_id: str, token: str) -> List[Dict]:
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     
     try:
-        with st.spinner("Fetching records..."):
+        with st.spinner("🔄 Fetching your records..."):
             response = requests.get(url, headers=headers, timeout=30)
             response.raise_for_status()
             
             data = response.json()
             if not isinstance(data, list):
                 logger.warning(f"Expected list, got {type(data)}")
-                st.warning("Unexpected data format received from server")
+                st.warning("⚠️ Unexpected data format received from server")
                 return []
                 
             logger.info(f"Successfully fetched {len(data)} records")
