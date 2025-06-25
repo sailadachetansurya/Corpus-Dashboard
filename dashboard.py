@@ -279,7 +279,7 @@ def fetch_any_user_records(query_user_id: str, token: str) -> List[Dict]:
         progress_bar = st.progress(0)
         status_text = st.empty()
         
-        status_text.text(f"🔍 Searching for user {query_user_id[:8]}...")
+        status_text.text(f"� Searching for user {query_user_id[:8]}...")
         progress_bar.progress(30)
         
         response = requests.get(url, headers=headers, timeout=30)
@@ -349,6 +349,143 @@ def fetch_all_records(token: str) -> List[Dict]:
         
     except Exception as e:
         st.error(f"❌ Database fetch failed: {e}")
+        return []
+
+def fetch_user_contributions(user_id: str, token: str) -> List[Dict]:
+    """Fetch user contributions from the API"""
+    if not user_id or not token:
+        st.error("User ID and token are required")
+        return []
+    
+    url = f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions"
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    
+    try:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        status_text.text("🔄 Fetching your contributions...")
+        progress_bar.progress(30)
+        
+        response = requests.get(url, headers=headers, timeout=30)
+        progress_bar.progress(70)
+        status_text.text("📊 Processing contributions...")
+        
+        response.raise_for_status()
+        data = response.json()
+        
+        progress_bar.progress(100)
+        status_text.text("✅ Contributions loaded!")
+        time.sleep(0.5)
+        
+        progress_bar.empty()
+        status_text.empty()
+        
+        if not isinstance(data, list):
+            logger.warning(f"Expected list, got {type(data)}")
+            st.warning("⚠️ Unexpected data format received from server")
+            return []
+        
+        logger.info(f"Successfully fetched {len(data)} contributions")
+        return data
+        
+    except requests.exceptions.Timeout:
+        progress_bar.empty()
+        status_text.empty()
+        st.error("⏱️ Request timed out. Please try again.")
+        return []
+    except requests.exceptions.ConnectionError:
+        progress_bar.empty()
+        status_text.empty()
+        st.error("🌐 Unable to connect to the server. Please check your internet connection.")
+        return []
+    except requests.exceptions.HTTPError as e:
+        progress_bar.empty()
+        status_text.empty()
+        if e.response.status_code == 401:
+            st.error("🔐 Authentication failed. Please log in again.")
+            st.session_state.authenticated = False
+        else:
+            st.error(f"❌ Failed to fetch contributions: HTTP {e.response.status_code}")
+        return []
+    except Exception as e:
+        progress_bar.empty()
+        status_text.empty()
+        logger.error(f"Unexpected error fetching contributions: {e}")
+        st.error(f"❌ Unexpected error: {e}")
+        return []
+
+def fetch_user_contributions_by_media_type(user_id: str, media_type: str, token: str) -> List[Dict]:
+    """Fetch user contributions by media type from the API"""
+    if not user_id or not token or not media_type:
+        st.error("User ID, media type, and token are required")
+        return []
+    
+    # Validate media type
+    valid_media_types = ["text", "audio", "image", "video"]
+    if media_type not in valid_media_types:
+        st.error(f"Invalid media type. Must be one of: {', '.join(valid_media_types)}")
+        return []
+    
+    url = f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions/{media_type}"
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    
+    try:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        status_text.text(f"🔄 Fetching your {media_type} contributions...")
+        progress_bar.progress(30)
+        
+        response = requests.get(url, headers=headers, timeout=30)
+        progress_bar.progress(70)
+        status_text.text(f"📊 Processing {media_type} contributions...")
+        
+        response.raise_for_status()
+        data = response.json()
+        
+        progress_bar.progress(100)
+        status_text.text(f"✅ {media_type.title()} contributions loaded!")
+        time.sleep(0.5)
+        
+        progress_bar.empty()
+        status_text.empty()
+        
+        if not isinstance(data, list):
+            logger.warning(f"Expected list, got {type(data)}")
+            st.warning("⚠️ Unexpected data format received from server")
+            return []
+        
+        logger.info(f"Successfully fetched {len(data)} {media_type} contributions")
+        return data
+        
+    except requests.exceptions.Timeout:
+        progress_bar.empty()
+        status_text.empty()
+        st.error(f"⏱️ Request timed out. Please try again.")
+        return []
+    except requests.exceptions.ConnectionError:
+        progress_bar.empty()
+        status_text.empty()
+        st.error("🌐 Unable to connect to the server. Please check your internet connection.")
+        return []
+    except requests.exceptions.HTTPError as e:
+        progress_bar.empty()
+        status_text.empty()
+        if e.response.status_code == 401:
+            st.error("🔐 Authentication failed. Please log in again.")
+            st.session_state.authenticated = False
+        elif e.response.status_code == 404:
+            st.warning(f"No {media_type} contributions found for this user.")
+            return []
+        else:
+            st.error(f"❌ Failed to fetch {media_type} contributions: HTTP {e.response.status_code}")
+        return []
+    except Exception as e:
+        progress_bar.empty()
+        status_text.empty()
+        logger.error(f"Unexpected error fetching {media_type} contributions: {e}")
+        st.error(f"❌ Unexpected error: {e}")
         return []
 
 def fetch_all_users(token: str) -> List[Dict]:
@@ -653,32 +790,71 @@ def display_media_gallery(df: pd.DataFrame, media_type: str, limit: int = 20):
                     with cols[j]:
                         # Display media based on type
                         if media_type == 'image':
-                            if 'file_url' in row and pd.notna(row['file_url']):
+                            # Check for different possible URL fields
+                            image_url = None
+                            for field in ['file_url', 'url', 'image_url', 'media_url', 'thumbnail']:
+                                if field in row and pd.notna(row[field]):
+                                    image_url = row[field]
+                                    break
+                            
+                            if image_url:
                                 try:
-                                    st.image(row['file_url'], 
-                                           caption=row.get('title', 'Untitled'), 
-                                           use_column_width=True)
+                                    # Add error handling for image loading
+                                    st.markdown(f"""
+                                    <div style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 10px;">
+                                        <img src="{image_url}" style="width: 100%; border-radius: 10px 10px 0 0;">
+                                        <div style="padding: 10px; background: white;">
+                                            <p style="margin: 0; font-weight: bold;">{row.get('title', 'Untitled')}</p>
+                                        </div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
                                 except Exception as e:
                                     st.error(f"Failed to load image: {e}")
                                     st.text(f"Title: {row.get('title', 'Untitled')}")
                             else:
-                                st.text(f"📷 {row.get('title', 'Untitled')}")
+                                # Placeholder for missing image
+                                st.markdown(f"""
+                                <div style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 10px; background: #f8f9fa; height: 200px; display: flex; align-items: center; justify-content: center;">
+                                    <div style="text-align: center;">
+                                        <p style="font-size: 2em; margin: 0;">📷</p>
+                                        <p style="margin: 0;">{row.get('title', 'Untitled')}</p>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
                                 
                         elif media_type == 'video':
-                            if 'file_url' in row and pd.notna(row['file_url']):
+                            # Check for different possible URL fields
+                            video_url = None
+                            for field in ['file_url', 'url', 'video_url', 'media_url']:
+                                if field in row and pd.notna(row[field]):
+                                    video_url = row[field]
+                                    break
+                                    
+                            if video_url:
                                 try:
-                                    st.video(row['file_url'])
+                                    st.video(video_url)
                                     st.caption(row.get('title', 'Untitled'))
                                 except Exception as e:
                                     st.error(f"Failed to load video: {e}")
                                     st.text(f"Title: {row.get('title', 'Untitled')}")
                             else:
-                                st.text(f"🎥 {row.get('title', 'Untitled')}")
+                                # Placeholder for missing video
+                                st.markdown(f"""
+                                <div style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 10px; background: #f8f9fa; height: 200px; display: flex; align-items: center; justify-content: center;">
+                                    <div style="text-align: center;">
+                                        <p style="font-size: 2em; margin: 0;">🎥</p>
+                                        <p style="margin: 0;">{row.get('title', 'Untitled')}</p>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
                         
-                        # Show additional info
-                        st.caption(f"📅 {row['created_at'].strftime('%Y-%m-%d')}")
-                        if 'category' in row:
-                            st.caption(f"🏷️ {row['category']}")
+                        # Show additional info with better styling
+                        st.markdown(f"""
+                        <div style="display: flex; justify-content: space-between; padding: 5px 0;">
+                            <span style="color: #666;">📅 {row['created_at'].strftime('%Y-%m-%d')}</span>
+                            <span style="color: #666;">🏷️ {row.get('category', 'Uncategorized')}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
                             
     except Exception as e:
         logger.error(f"Error displaying media gallery: {e}")
@@ -1009,41 +1185,149 @@ def main():
     """Enhanced main application with all new features"""
     initialize_session_state()
     
-    # Custom CSS for better styling
+    # Enhanced CSS for better UI
     st.markdown("""
     <style>
+        /* Main header styling */
         .main-header {
             background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
             padding: 2rem;
-            border-radius: 10px;
+            border-radius: 15px;
             text-align: center;
             color: white;
             margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
         }
+        
+        /* Card styling */
         .metric-card {
             background: white;
-            padding: 1rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1.2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             text-align: center;
-            margin: 0.5rem 0;
+            margin: 0.7rem 0;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #f0f2f6;
         }
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 7px 20px rgba(0,0,0,0.1);
+        }
+        
+        /* Sidebar styling */
         .sidebar-info {
-            background: #f0f2f6;
-            padding: 1rem;
-            border-radius: 10px;
+            background: #f8f9fa;
+            padding: 1.2rem;
+            border-radius: 12px;
             margin: 1rem 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        /* Button styling */
+        .stButton>button {
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .stButton>button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        /* Dataframe styling */
+        .dataframe {
+            border-radius: 10px;
+            overflow: hidden;
+            border: none;
+        }
+        
+        /* Chart container styling */
+        .chart-container {
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin: 1rem 0;
+        }
+        
+        /* Section headers */
+        h2, h3 {
+            color: #333;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        /* Insights styling */
+        .insight-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 8px 0;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s ease;
+        }
+        .insight-card:hover {
+            transform: translateX(5px);
+        }
+        
+        /* Form styling */
+        .stForm {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        /* Input fields */
+        .stTextInput>div>div>input, .stSelectbox>div>div>div {
+            border-radius: 8px;
         }
     </style>
     """, unsafe_allow_html=True)
     
-    # Header
-    st.markdown("""
-    <div class="main-header">
-        <h1>🚀 Advanced Corpus Records Dashboard</h1>
-        <p style="margin: 0; font-size: 1.2em;">Deep insights into your corpus data with AI-powered analytics</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # Header with improved logout button placement
+    if st.session_state.authenticated:
+        st.markdown("""
+        <div class="main-header">
+            <h1>🚀 Advanced Corpus Records Dashboard</h1>
+            <p style="margin: 0; font-size: 1.2em;">Deep insights into your corpus data with AI-powered analytics</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Move logout button to top-right corner with better styling
+        st.markdown("""
+        <style>
+        .logout-button {
+            position: fixed;
+            top: 0.5rem;
+            right: 1rem;
+            z-index: 1000;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        with st.container():
+            col1, col2 = st.columns([6, 1])
+            with col2:
+                if st.button("🚪 Logout", key="header_logout", type="primary", help="Log out of your account"):
+                    # Clear authentication
+                    st.session_state.authenticated = False
+                    st.session_state.token = None
+                    st.session_state.user_id = None
+                    st.session_state.username = None
+                    st.success("✅ Logged out successfully!")
+                    time.sleep(1)
+                    st.rerun()
+    else:
+        st.markdown("""
+        <div class="main-header">
+            <h1>🚀 Advanced Corpus Records Dashboard</h1>
+            <p style="margin: 0; font-size: 1.2em;">Deep insights into your corpus data with AI-powered analytics</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Sidebar
     with st.sidebar:
