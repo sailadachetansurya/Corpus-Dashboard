@@ -1275,10 +1275,10 @@ def main():
         
         /* Form styling */
         .stForm {
-            background: white;
             padding: 1.5rem;
             border-radius: 15px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            color: gray !important;
         }
         
         /* Input fields */
@@ -1297,30 +1297,7 @@ def main():
         </div>
         """, unsafe_allow_html=True)
         
-        # Move logout button to top-right corner with better styling
-        st.markdown("""
-        <style>
-        .logout-button {
-            position: fixed;
-            top: 0.5rem;
-            right: 1rem;
-            z-index: 1000;
-        }
-        </style>
-        """, unsafe_allow_html=True)
         
-        with st.container():
-            col1, col2 = st.columns([6, 1])
-            with col2:
-                if st.button("🚪 Logout", key="header_logout", type="primary", help="Log out of your account"):
-                    # Clear authentication
-                    st.session_state.authenticated = False
-                    st.session_state.token = None
-                    st.session_state.user_id = None
-                    st.session_state.username = None
-                    st.success("✅ Logged out successfully!")
-                    time.sleep(1)
-                    st.rerun()
     else:
         st.markdown("""
         <div class="main-header">
@@ -1369,6 +1346,31 @@ def main():
                 index=0 if st.session_state.chart_theme == "dark" else 1
             )
             st.session_state.chart_theme = chart_theme
+
+            # Move logout button to top-right corner with better styling
+            st.markdown("""
+            <style>
+            .logout-button {
+                position: fixed;
+                top: 0.5rem;
+                right: 1rem;
+                z-index: 1000;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            with st.container():
+                col1, col2 = st.columns([1, 1])
+                with col2:
+                    if st.button("🚪 Logout", key="header_logout", type="primary", help="Log out of your account"):
+                        # Clear authentication
+                        st.session_state.authenticated = False
+                        st.session_state.token = None
+                        st.session_state.user_id = None
+                        st.session_state.username = None
+                        st.success("✅ Logged out successfully!")
+                        time.sleep(1)
+                        st.rerun()
     
     # Authentication Logic
     if not st.session_state.authenticated:
