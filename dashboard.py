@@ -79,8 +79,8 @@ def initialize_session_state():
         "chart_theme": "dark",
         "auto_refresh": False,
         "notifications": [],
-        "users_list": None,          # ADD THIS
-        "user_mapping": {},          # ADD THIS
+        "users_list": None,
+        "user_mapping": {},
         "selected_user_from_dropdown": None,
         "user_preferences": {
             "theme": "dark",
@@ -93,7 +93,7 @@ def initialize_session_state():
         if var not in st.session_state:
             st.session_state[var] = default_value
 
-# Authentication Functions (keeping existing ones with enhancements)
+# Authentication Functions
 def decode_jwt_token(token: str) -> Optional[Dict]:
     """Enhanced JWT token decoder with better error handling"""
     try:
@@ -166,6 +166,36 @@ def login_user(phone: str, password: str) -> Optional[Dict]:
         return None
     except Exception as e:
         st.error(f"❌ Unexpected error: {e}")
+        return None
+
+def request_otp(phone: str) -> bool:
+    """Request OTP for login"""
+    try:
+        response = requests.post(
+            "https://backend2.swecha.org/api/v1/auth/send-otp",
+            json={"phone": phone},
+            headers={"accept": "application/json", "Content-Type": "application/json"},
+            timeout=30
+        )
+        response.raise_for_status()
+        return True
+    except Exception as e:
+        st.error(f"❌ Failed to request OTP: {e}")
+        return False
+
+def verify_otp(phone: str, otp: str) -> Optional[Dict]:
+    """Verify OTP and get token"""
+    try:
+        response = requests.post(
+            "https://backend2.swecha.org/api/v1/auth/verify-otp",
+            json={"phone": phone, "otp": otp},
+            headers={"accept": "application/json", "Content-Type": "application/json"},
+            timeout=30
+        )
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        st.error(f"❌ OTP verification failed: {e}")
         return None
 
 # Enhanced Data Fetching Functions
@@ -319,6 +349,7 @@ def fetch_all_records(token: str) -> List[Dict]:
     except Exception as e:
         st.error(f"❌ Database fetch failed: {e}")
         return []
+
 def fetch_all_users(token: str) -> List[Dict]:
     """Fetch all users from the API for dropdown selection"""
     if not token:
@@ -414,40 +445,32 @@ def advanced_summarize(records: List[Dict], filters: Dict = None) -> Optional[Di
         if df.empty:
             return None
         
+        # Calculate total users
+        total_users = df['user_id'].nunique() if 'user_id' in df.columns else 0
+        
         # Enhanced metrics
         summary = {
             "total_records": len(df),
+            "total_users": total_users,
             "unique_dates": df['date'].nunique(),
             "date_range": (df['date'].min(), df['date'].max()),
             "avg_daily_uploads": len(df) / max(df['date'].nunique(), 1),
-            
-            # Distributions
             "media_type": df["media_type"].value_counts(),
             "status": df["status"].value_counts(),
             "category": df["category"].value_counts(),
-            
-            # Time-based analysis
             "uploads_per_day": df.groupby("date").size(),
             "uploads_per_hour": df.groupby("hour").size(),
             "uploads_per_weekday": df.groupby("day_of_week").size(),
             "uploads_per_month": df.groupby("month").size(),
             "uploads_per_week": df.groupby("week").size(),
-            
-            # Advanced metrics
             "peak_upload_day": df.groupby("date").size().idxmax(),
             "peak_upload_count": df.groupby("date").size().max(),
             "most_active_hour": df.groupby("hour").size().idxmax(),
             "most_active_weekday": df.groupby("day_of_week").size().idxmax(),
             "category_diversity": len(df["category"].unique()),
             "media_diversity": len(df["media_type"].unique()),
-            
-            # Growth metrics
             "weekly_growth": calculate_growth_rate(df.groupby("week").size()),
             "monthly_growth": calculate_growth_rate(df.groupby("month").size()),
-            
-            # Quality metrics
-            "success_rate": (df["status"] == "completed").mean() * 100 if "completed" in df["status"].values else 0,
-            
             "df": df
         }
         
@@ -502,12 +525,10 @@ def get_data_insights(summary: Dict) -> List[str]:
         trend = "increasing" if weekly_growth > 0 else "decreasing"
         insights.append(f"📊 Weekly uploads are {trend} by {abs(weekly_growth):.1f}%")
     
-    # Success rate insights
-    success_rate = summary.get('success_rate', 0)
-    if success_rate > 90:
-        insights.append(f"✅ Excellent success rate of {success_rate:.1f}%")
-    elif success_rate < 70:
-        insights.append(f"⚠️ Success rate of {success_rate:.1f}% needs attention")
+    # User diversity insights
+    total_users = summary.get('total_users', 0)
+    if total_users > 0:
+        insights.append(f"👥 {total_users} unique users contributed to these records")
     
     # Diversity insights
     category_diversity = summary.get('category_diversity', 0)
@@ -556,9 +577,9 @@ def create_advanced_overview_dashboard(summary: Dict):
     with col4:
         st.markdown('<div class="metric-container">', unsafe_allow_html=True)
         st.metric(
-            label="✅ Success Rate",
-            value=f"{summary.get('success_rate', 0):.1f}%",
-            delta="Quality Score"
+            label="👥 Total Users",
+            value=f"{summary.get('total_users', 0)}",
+            delta="Unique Contributors"
         )
         st.markdown('</div>', unsafe_allow_html=True)
     
@@ -1005,10 +1026,10 @@ def generate_recommendations(summary: Dict) -> List[str]:
         if weekend_uploads < weekday_uploads * 0.2:
             recommendations.append("Consider uploading content during weekends to maintain consistent activity.")
     
-    # Success rate recommendations
-    success_rate = summary.get('success_rate', 0)
-    if success_rate < 80:
-        recommendations.append("Focus on improving upload quality to increase success rate. Check file formats and sizes.")
+    # User contribution recommendations
+    total_users = summary.get('total_users', 0)
+    if total_users < 5:
+        recommendations.append("Encourage more users to contribute to increase dataset diversity.")
     
     # Peak time recommendations
     if not summary["uploads_per_hour"].empty:
@@ -1057,11 +1078,11 @@ def create_comparison_dashboard(records1: List[Dict], records2: List[Dict], labe
         )
     
     with col4:
-        diff_success = summary2.get('success_rate', 0) - summary1.get('success_rate', 0)
+        diff_users = summary2.get('total_users', 0) - summary1.get('total_users', 0)
         st.metric(
-            "Success Rate",
-            f"{summary2.get('success_rate', 0):.1f}%",
-            delta=f"{diff_success:+.1f}% vs {label1}"
+            "Total Users",
+            f"{summary2.get('total_users', 0)}",
+            delta=f"{diff_users:+} vs {label1}"
         )
     
     # Side-by-side comparison charts
@@ -1139,7 +1160,6 @@ def create_export_options(data: List[Dict], filename_prefix: str = "corpus_data"
                     )
                 
                 elif export_format == "Excel":
-                    # Create Excel file with multiple sheets
                     from io import BytesIO
                     output = BytesIO()
                     
@@ -1149,16 +1169,15 @@ def create_export_options(data: List[Dict], filename_prefix: str = "corpus_data"
                         if include_summary:
                             summary = advanced_summarize(data)
                             if summary:
-                                # Create summary sheet
                                 summary_data = {
-                                    'Metric': ['Total Records', 'Unique Dates', 'Average Daily Uploads', 
-                                             'Peak Upload Count', 'Success Rate', 'Category Diversity'],
+                                    'Metric': ['Total Records', 'Total Users', 'Unique Dates', 'Average Daily Uploads', 
+                                             'Peak Upload Count', 'Category Diversity'],
                                     'Value': [
                                         summary['total_records'],
+                                        summary['total_users'],
                                         summary['unique_dates'],
                                         f"{summary['avg_daily_uploads']:.2f}",
                                         summary['peak_upload_count'],
-                                        f"{summary.get('success_rate', 0):.1f}%",
                                         summary['category_diversity']
                                     ]
                                 }
@@ -1194,60 +1213,129 @@ def show_enhanced_login():
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        with st.form("enhanced_login_form", clear_on_submit=False):
-            st.markdown("### 📱 Login Credentials")
-            
-            phone = st.text_input(
-                "Phone Number",
-                placeholder="Enter your phone number",
-                help="Enter the phone number associated with your account"
-            )
-            
-            password = st.text_input(
-                "Password",
-                type="password",
-                placeholder="Enter your password",
-                help="Enter your account password"
-            )
-            
-            col_login, col_demo = st.columns(2)
-            
-            with col_login:
-                login_clicked = st.form_submit_button("🔑 Login", use_container_width=True)
-            
-            with col_demo:
-                demo_clicked = st.form_submit_button("🎯 Demo Mode", use_container_width=True)
-            
-            if login_clicked:
-                if phone and password:
-                    login_response = login_user(phone, password)
-                    
-                    if login_response and "access_token" in login_response:
-                        token_data = decode_jwt_token(login_response["access_token"])
+        login_tab, otp_tab = st.tabs(["🔑 Password Login", "📱 OTP Login"])
+        
+        with login_tab:
+            with st.form("password_login_form", clear_on_submit=False):
+                st.markdown("### 📱 Login with Password")
+                
+                col_phone, col_prefix = st.columns([4, 1])
+                with col_prefix:
+                    st.text_input("", value="+91", disabled=True)
+                with col_phone:
+                    phone = st.text_input(
+                        "Phone Number",
+                        placeholder="Enter your 10-digit number",
+                        help="Enter your 10-digit phone number without country code",
+                        max_chars=10
+                    )
+                
+                password = st.text_input(
+                    "Password",
+                    type="password",
+                    placeholder="Enter your password",
+                    help="Enter your account password"
+                )
+                
+                col_login, col_demo = st.columns(2)
+                
+                with col_login:
+                    login_clicked = st.form_submit_button("🔑 Login", use_container_width=True)
+                
+                with col_demo:
+                    demo_clicked = st.form_submit_button("🎯 Demo Mode", use_container_width=True)
+                
+                if login_clicked:
+                    if phone and password:
+                        full_phone = f"+91{phone}"
+                        login_response = login_user(full_phone, password)
                         
-                        if token_data:
-                            st.session_state.authenticated = True
-                            st.session_state.token = login_response["access_token"]
-                            st.session_state.user_id = token_data["user_id"]
-                            st.session_state.username = phone
-                            st.session_state.login_attempts = 0
+                        if login_response and "access_token" in login_response:
+                            token_data = decode_jwt_token(login_response["access_token"])
                             
-                            st.success("🎉 Login successful! Redirecting to dashboard...")
-                            time.sleep(1)
-                            st.rerun()
+                            if token_data:
+                                st.session_state.authenticated = True
+                                st.session_state.token = login_response["access_token"]
+                                st.session_state.user_id = token_data["user_id"]
+                                st.session_state.username = full_phone
+                                st.session_state.login_attempts = 0
+                                
+                                st.success("🎉 Login successful! Redirecting to dashboard...")
+                                time.sleep(1)
+                                st.rerun()
+                            else:
+                                st.error("❌ Invalid token received")
                         else:
-                            st.error("❌ Invalid token received")
+                            st.error("❌ Login failed. Please check your credentials.")
                     else:
-                        st.error("❌ Login failed. Please check your credentials.")
-                else:
-                    st.warning("⚠️ Please enter both phone number and password")
+                        st.warning("⚠️ Please enter both phone number and password")
+                
+                elif demo_clicked:
+                    st.info("🎯 Demo mode activated! Using sample data for demonstration.")
+                    st.session_state.authenticated = True
+                    st.session_state.demo_mode = True
+                    st.session_state.username = "Demo User"
+                    st.rerun()
+        
+        with otp_tab:
+            with st.form("otp_login_form", clear_on_submit=True):
+                st.markdown("### 📱 Login with OTP")
+                
+                col_phone, col_prefix = st.columns([4, 1])
+                with col_prefix:
+                    st.text_input("", value="+91", disabled=True)
+                with col_phone:
+                    phone = st.text_input(
+                        "Phone Number",
+                        placeholder="Enter your 10-digit number",
+                        help="Enter your 10-digit phone number without country code",
+                        max_chars=10,
+                        key="otp_phone"
+                    )
+                
+                request_otp_clicked = st.form_submit_button("📤 Request OTP", use_container_width=True)
+                
+                if request_otp_clicked and phone:
+                    full_phone = f"+91{phone}"
+                    if request_otp(full_phone):
+                        st.session_state["otp_phone"] = full_phone
+                        st.success("✅ OTP sent successfully! Please check your phone.")
+                        st.rerun()
             
-            elif demo_clicked:
-                st.info("🎯 Demo mode activated! Using sample data for demonstration.")
-                st.session_state.authenticated = True
-                st.session_state.demo_mode = True
-                st.session_state.username = "Demo User"
-                st.rerun()
+            if st.session_state.get("otp_phone"):
+                with st.form("otp_verify_form", clear_on_submit=True):
+                    st.markdown(f"### 🔐 Verify OTP for {st.session_state['otp_phone']}")
+                    otp = st.text_input(
+                        "Enter OTP",
+                        placeholder="Enter the 6-digit OTP",
+                        help="Enter the OTP sent to your phone",
+                        max_chars=6
+                    )
+                    
+                    if st.form_submit_button("✅ Verify OTP", use_container_width=True):
+                        if otp:
+                            login_response = verify_otp(st.session_state["otp_phone"], otp)
+                            
+                            if login_response and "access_token" in login_response:
+                                token_data = decode_jwt_token(login_response["access_token"])
+                                
+                                if token_data:
+                                    st.session_state.authenticated = True
+                                    st.session_state.token = login_response["access_token"]
+                                    st.session_state.user_id = token_data["user_id"]
+                                    st.session_state.username = st.session_state["otp_phone"]
+                                    st.session_state.login_attempts = 0
+                                    st.session_state.pop("otp_phone", None)
+                                    
+                                    st.success("🎉 OTP verified! Redirecting to dashboard...")
+                                    time.sleep(1)
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Invalid token received")
+                            else:
+                                st.error("❌ Invalid OTP. Please try again.")
+                        else:
+                            st.warning("⚠️ Please enter the OTP")
     
     # Login attempts warning
     if st.session_state.login_attempts >= 2:
@@ -1339,6 +1427,15 @@ def main():
             help="Filter by specific categories"
         )
         
+        if st.button("🔄 Refresh Data", use_container_width=True):
+            # Clear cache and reload data
+            for key in list(st.session_state.keys()):
+                if key.startswith("records_"):
+                    del st.session_state[key]
+            st.session_state.query_results = None
+            st.session_state.database_overview = None
+            st.rerun()
+        
         st.markdown("---")
         
         # Settings
@@ -1359,6 +1456,15 @@ def main():
                 del st.session_state[key]
             st.rerun()
     
+    # Update filters
+    filters = {}
+    if date_filter:
+        filters['date_range'] = (date_filter, date_filter) if isinstance(date_filter, datetime.date) else date_filter
+    if category_filter:
+        filters['categories'] = category_filter
+    
+    st.session_state.advanced_filters = filters
+    
     # Main content based on selected mode
     if dashboard_mode == "🏠 My Records":
         show_my_records_dashboard()
@@ -1373,16 +1479,15 @@ def show_my_records_dashboard():
     """Show user's own records dashboard"""
     if st.session_state.get('demo_mode'):
         st.info("🎯 Demo Mode: Showing sample data")
-        # You can add sample data here for demo
         return
     
-    records = fetch_records_with_cache(st.session_state.user_id, st.session_state.token)
+    records = fetch_records_with_cache(st.session_state.user_id, st.session_state.token, use_cache=False)
     
     if not records:
         st.warning("No records found for your account.")
         return
     
-    summary = advanced_summarize(records)
+    summary = advanced_summarize(records, st.session_state.advanced_filters)
     
     if summary:
         create_advanced_overview_dashboard(summary)
@@ -1461,7 +1566,6 @@ def show_user_query_dashboard():
                                     if records:
                                         st.session_state["query_results"] = records
                                         st.success(f"Found {len(records)} records for {user_mapping[selected_user_id]}!")
-                                        # Don't render dashboard here - will be rendered below
                                         st.rerun()
                                     else:
                                         st.session_state["query_results"] = None
@@ -1472,7 +1576,7 @@ def show_user_query_dashboard():
                 st.warning("No users loaded. Please click 'Load Users List' first.")
         
         with tab2:
-            # Manual ID input (existing functionality)
+            # Manual ID input
             with st.form("user_query_form_manual"):
                 query_user_id = st.text_input(
                     "User ID to Query",
@@ -1522,7 +1626,7 @@ def show_user_query_dashboard():
                 else:
                     st.warning(f"No records found for user ID: {query_user_id}")
     
-    # Display results OUTSIDE the column layout - this is the key fix
+    # Display results
     if st.session_state.get("query_results") and st.session_state.get("last_queried_user"):
         st.divider()
         
@@ -1535,10 +1639,9 @@ def show_user_query_dashboard():
         st.subheader(f"📊 Analytics for {user_name}")
         
         # Process summary
-        summary = advanced_summarize(records)
+        summary = advanced_summarize(records, st.session_state.advanced_filters)
         
         if summary:
-            # Display dashboard in main area
             create_advanced_overview_dashboard(summary)
             create_export_options(records, f"user_{user_name.replace(' ', '_')}")
         else:
@@ -1576,7 +1679,7 @@ def show_database_overview_dashboard():
     
     if st.session_state.get("database_overview"):
         records = st.session_state.database_overview
-        summary = advanced_summarize(records)
+        summary = advanced_summarize(records, st.session_state.advanced_filters)
         
         if summary:
             st.markdown("### 📈 Global Statistics")
