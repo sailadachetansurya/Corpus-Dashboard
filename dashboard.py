@@ -178,6 +178,7 @@ def request_otp(phone: str) -> bool:
             timeout=30
         )
         response.raise_for_status()
+        print("✅ OTP request response:", response.json())  # Add this
         return True
     except Exception as e:
         st.error(f"❌ Failed to request OTP: {e}")
@@ -577,7 +578,7 @@ def create_advanced_overview_dashboard(summary: Dict):
     with col4:
         st.markdown('<div class="metric-container">', unsafe_allow_html=True)
         st.metric(
-            label="👥 Total Users",
+            label="👥 Total Contributers",
             value=f"{summary.get('total_users', 0)}",
             delta="Unique Contributors"
         )
@@ -586,7 +587,7 @@ def create_advanced_overview_dashboard(summary: Dict):
     with col5:
         st.markdown('<div class="metric-container">', unsafe_allow_html=True)
         st.metric(
-            label="🌈 Categories",
+            label="Categories",
             value=f"{summary['category_diversity']}",
             delta=f"of {len(CATEGORIES)} total"
         )
