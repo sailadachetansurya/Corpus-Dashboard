@@ -9,17 +9,14 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import requests
 from typing import Dict, List, Optional, Tuple
-import os
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
 import base64
 import json
 import logging
 import time
-from wordcloud import WordCloud
-import altair as alt
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
