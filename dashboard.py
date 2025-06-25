@@ -1386,6 +1386,7 @@ def main():
             if auth_method == "📱 Login with Password":
                 with st.form("login_form"):
                     phone = st.text_input("📞 Phone Number", placeholder="Enter your phone number")
+                    phone = f"+91{phone}"
                     password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
                     
                     if st.form_submit_button("🚀 Login", type="primary"):
@@ -1413,7 +1414,7 @@ def main():
             else:  # OTP Login
                 with st.form("otp_login_form"):
                     phone = st.text_input("📞 Phone Number", placeholder="Enter your phone number")
-                    
+                    phone = f"+91{phone}"
                     col1, col2 = st.columns(2)
                     with col1:
                         if st.form_submit_button("📲 Send OTP"):
