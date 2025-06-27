@@ -189,7 +189,7 @@ def verify_otp(phone: str, otp: str) -> Optional[Dict]:
     try:
         response = requests.post(
             "https://backend2.swecha.org/api/v1/auth/verify-otp",
-            json={"phone_number": phone, "otp_code": otp,"has_given_consent": true},
+            json={"phone_number": phone, "otp_code": otp,"has_given_consent": True},
             headers={"accept": "application/json", "Content-Type": "application/json"},
             timeout=30
         )
