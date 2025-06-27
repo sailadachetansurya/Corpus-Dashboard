@@ -174,7 +174,7 @@ def request_otp(phone: str) -> bool:
     try:
         response = requests.post(
             "https://backend2.swecha.org/api/v1/auth/send-otp",
-            json={"phone-number": phone},
+            json={"phone_number": phone},
             headers={"accept": "application/json", "Content-Type": "application/json"},
             timeout=30
         )
