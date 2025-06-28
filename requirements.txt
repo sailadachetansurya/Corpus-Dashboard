@@ -7,3 +7,4 @@ matplotlib
 seaborn
 wordcloud
 altair
+streamlit_js_eval
