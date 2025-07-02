@@ -609,114 +609,202 @@ def fetch_any_user_records(query_user_id: str, token: str) -> List[Dict]:
 
 
 def fetch_all_records(token: str) -> List[Dict]:
-    """Enhanced database overview fetching"""
+    """Enhanced function to fetch ALL records with proper pagination"""
     if not token:
         st.error("Token is required")
         return []
-
-    url = f"https://backend2.swecha.org/api/v1/records/?skip=0&limit=1000"
+    
+    all_records = []
+    skip = 0
+    limit = 1000  # Keep reasonable batch size
+    page = 1
+    
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-
+    
     try:
+        # Create progress indicators
         progress_bar = st.progress(0)
         status_text = st.empty()
-
-        status_text.text("🌐 Connecting to database...")
-        progress_bar.progress(20)
-
-        response = requests.get(url, headers=headers, timeout=60)
-        progress_bar.progress(60)
-        status_text.text("📥 Downloading database records...")
-
-        response.raise_for_status()
-        data = response.json()
-
-        progress_bar.progress(90)
-        status_text.text("🔄 Processing data...")
-
-        if not isinstance(data, list):
-            st.warning("⚠️ Unexpected data format received")
-            return []
-
-        progress_bar.progress(100)
-        status_text.text("✅ Database overview loaded!")
-        time.sleep(0.5)
-
+        
+        while True:
+            url = f"https://backend2.swecha.org/api/v1/records/?skip={skip}&limit={limit}"
+            
+            # Update progress
+            status_text.text(f"🔄 Loading records... Page {page} ({len(all_records)} records loaded)")
+            
+            response = requests.get(url, headers=headers, timeout=60)
+            response.raise_for_status()
+            data = response.json()
+            
+            if not isinstance(data, list):
+                st.warning("⚠️ Unexpected data format received")
+                break
+            
+            # If no data returned, we've reached the end
+            if not data:
+                logger.info(f"No more records found at page {page}")
+                break
+            
+            # Add records to our collection
+            all_records.extend(data)
+            logger.info(f"Fetched {len(data)} records from page {page}, total: {len(all_records)}")
+            
+            # If we got less than the limit, we've reached the end
+            if len(data) < limit:
+                logger.info(f"Reached end of records at page {page}")
+                break
+            
+            # Prepare for next iteration
+            skip += limit
+            page += 1
+            
+            # Update progress (estimate based on current data)
+            if len(all_records) > 0:
+                progress_percentage = min(0.95, (len(all_records) / (len(all_records) + 100)) * 100)
+                progress_bar.progress(progress_percentage / 100)
+            
+            # Safety check to prevent infinite loops
+            if page > 100:  # Reasonable limit
+                logger.warning(f"Stopped at page {page} to prevent infinite loop")
+                st.warning(f"⚠️ Stopped loading at page {page}. Contact admin if you need more records.")
+                break
+        
+        # Complete progress
+        progress_bar.progress(1.0)
+        status_text.text(f"✅ Completed! Loaded {len(all_records)} records from {page} pages")
+        
+        # Clear progress indicators after a brief delay
+        time.sleep(1)
         progress_bar.empty()
         status_text.empty()
-
-        return data
-
+        
+        if all_records:
+            st.success(f"✅ Successfully loaded {len(all_records)} total records!")
+            logger.info(f"Total records fetched: {len(all_records)}")
+        else:
+            st.warning("No records found")
+            
+        return all_records
+        
     except Exception as e:
         st.error(f"❌ Database fetch failed: {e}")
+        logger.error(f"Error fetching all records: {e}")
         return []
 
 
-def fetch_user_contributions(user_id: str, token: str) -> List[Dict]:
-    """Fetch user contributions from the API"""
+
+# def fetch_user_contributions(user_id: str, token: str) -> List[Dict]:
+#     """Fetch user contributions from the API"""
+#     if not user_id or not token:
+#         st.error("User ID and token are required")
+#         return []
+
+#     url = f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions"
+#     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+
+#     try:
+#         progress_bar = st.progress(0)
+#         status_text = st.empty()
+
+#         status_text.text("🔄 Fetching your contributions...")
+#         progress_bar.progress(30)
+
+#         response = requests.get(url, headers=headers, timeout=30)
+#         progress_bar.progress(70)
+#         status_text.text("📊 Processing contributions...")
+
+#         response.raise_for_status()
+#         data = response.json()
+
+#         progress_bar.progress(100)
+#         status_text.text("✅ Contributions loaded!")
+#         time.sleep(0.5)
+
+#         progress_bar.empty()
+#         status_text.empty()
+
+#         if not isinstance(data, list):
+#             logger.warning(f"Expected list, got {type(data)}")
+#             st.warning("⚠️ Unexpected data format received from server")
+#             return []
+
+#         logger.info(f"Successfully fetched {len(data)} contributions")
+#         return data
+
+#     except requests.exceptions.Timeout:
+#         progress_bar.empty()
+#         status_text.empty()
+#         st.error("⏱️ Request timed out. Please try again.")
+#         return []
+#     except requests.exceptions.ConnectionError:
+#         progress_bar.empty()
+#         status_text.empty()
+#         st.error(
+#             "🌐 Unable to connect to the server. Please check your internet connection."
+#         )
+#         return []
+#     except requests.exceptions.HTTPError as e:
+#         progress_bar.empty()
+#         status_text.empty()
+#         if e.response.status_code == 401:
+#             st.error("🔐 Authentication failed. Please log in again.")
+#             st.session_state.authenticated = False
+#         else:
+#             st.error(f"❌ Failed to fetch contributions: HTTP {e.response.status_code}")
+#         return []
+#     except Exception as e:
+#         progress_bar.empty()
+#         status_text.empty()
+#         logger.error(f"Unexpected error fetching contributions: {e}")
+#         st.error(f"❌ Unexpected error: {e}")
+#         return []
+
+def fetch_user_contributions(user_id: str, token: str) -> Optional[Dict]:
+    """Fetch enhanced user contributions using the new API endpoint"""
     if not user_id or not token:
         st.error("User ID and token are required")
-        return []
-
+        return None
+    
     url = f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions"
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-
+    
     try:
         progress_bar = st.progress(0)
         status_text = st.empty()
-
-        status_text.text("🔄 Fetching your contributions...")
+        status_text.text("🔄 Fetching user contributions...")
         progress_bar.progress(30)
-
+        
         response = requests.get(url, headers=headers, timeout=30)
         progress_bar.progress(70)
-        status_text.text("📊 Processing contributions...")
-
+        status_text.text("📊 Processing contributions data...")
+        
         response.raise_for_status()
         data = response.json()
-
+        
         progress_bar.progress(100)
         status_text.text("✅ Contributions loaded!")
         time.sleep(0.5)
-
         progress_bar.empty()
         status_text.empty()
-
-        if not isinstance(data, list):
-            logger.warning(f"Expected list, got {type(data)}")
-            st.warning("⚠️ Unexpected data format received from server")
-            return []
-
-        logger.info(f"Successfully fetched {len(data)} contributions")
+        
         return data
-
-    except requests.exceptions.Timeout:
-        progress_bar.empty()
-        status_text.empty()
-        st.error("⏱️ Request timed out. Please try again.")
-        return []
-    except requests.exceptions.ConnectionError:
-        progress_bar.empty()
-        status_text.empty()
-        st.error(
-            "🌐 Unable to connect to the server. Please check your internet connection."
-        )
-        return []
+        
     except requests.exceptions.HTTPError as e:
         progress_bar.empty()
         status_text.empty()
-        if e.response.status_code == 401:
-            st.error("🔐 Authentication failed. Please log in again.")
-            st.session_state.authenticated = False
+        if e.response.status_code == 404:
+            st.warning(f"No contributions found for user {user_id}")
+            return None
         else:
             st.error(f"❌ Failed to fetch contributions: HTTP {e.response.status_code}")
-        return []
+            return None
     except Exception as e:
         progress_bar.empty()
         status_text.empty()
         logger.error(f"Unexpected error fetching contributions: {e}")
         st.error(f"❌ Unexpected error: {e}")
-        return []
+        return None
+
 
 
 def fetch_user_contributions_by_media_type(
@@ -914,6 +1002,78 @@ def fetch_all_users(token: str) -> List[Dict]:
         logger.error(f"Unexpected error fetching users: {e}")
         st.error(f"Unexpected error: {e}")
         return []
+
+
+
+def find_users_with_zero_records(token: str) -> List[Dict]:
+    """Find users who have zero records uploaded"""
+    try:
+        # Fetch all users and all records
+        all_users = fetch_all_users(token)
+        all_records = fetch_all_records(token)
+        
+        if not all_users or not all_records:
+            st.error("Failed to fetch required data")
+            return []
+        
+        # Get set of user IDs who have uploaded records
+        users_with_records = set()
+        for record in all_records:
+            if record.get("user_id"):
+                users_with_records.add(record["user_id"])
+        
+        # Find users with zero records
+        users_with_zero_records = []
+        for user in all_users:
+            user_id = user.get("id")
+            if user_id and user_id not in users_with_records:
+                users_with_zero_records.append(user)
+        
+        return users_with_zero_records
+        
+    except Exception as e:
+        logger.error(f"Error finding users with zero records: {e}")
+        st.error(f"Error: {e}")
+        return []
+
+
+
+def display_zero_records_analysis():
+    """Display analysis of users with zero records"""
+    st.subheader("📊 Zero Records Analysis")
+    
+    if st.button("🔍 Find Users with Zero Records"):
+        with st.spinner("Analyzing user activity..."):
+            zero_record_users = find_users_with_zero_records(st.session_state.token)
+            
+            if zero_record_users:
+                st.error(f"❌ Found {len(zero_record_users)} users with zero records uploaded")
+                
+                # Create DataFrame for better display
+                df_zero_users = pd.DataFrame(zero_record_users)
+                
+                # Display in expandable section
+                with st.expander(f"View {len(zero_record_users)} Users with Zero Records"):
+                    st.dataframe(
+                        df_zero_users[['name', 'id', 'phone']],
+                        use_container_width=True
+                    )
+                
+                # Show summary statistics
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Users with Zero Records", len(zero_record_users))
+                with col2:
+                    total_users = len(fetch_all_users(st.session_state.token))
+                    percentage = (len(zero_record_users) / total_users) * 100
+                    st.metric("Percentage", f"{percentage:.1f}%")
+                with col3:
+                    st.metric("Active Users", total_users - len(zero_record_users))
+                    
+            else:
+                st.success("✅ All users have uploaded at least one record!")
+
+
 
 # Export Changed to here 
 def create_export_section(df, summary):
@@ -2467,6 +2627,7 @@ def main():
                     # Create a modified summary for this user
                     user_summary = advanced_summarize(user_records)
                     create_export_section(df, user_summary)
+                    display_zero_records_analysis()
                 else:
                     st.warning(f"No records found for user: {selected_user_id}")
 
@@ -2509,6 +2670,28 @@ def main():
                     st.markdown("### 📥 Export Database Summary")
                     df = pd.DataFrame(all_records)  # Use all_records instead of user_records
                     create_export_section(df, summary)
+                    
+                    # Add zero records analysis
+                    st.markdown("---")
+                    st.subheader("👥 User Activity Analysis")
+                    
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        total_users = len(fetch_all_users(st.session_state.token))
+                        st.metric("Total Registered Users", total_users)
+                    
+                    with col2:
+                        active_users = summary.get("total_users", 0)
+                        st.metric("Active Users", active_users)
+                    
+                    with col3:
+                        inactive_users = total_users - active_users
+                        st.metric("Users with Zero Records", inactive_users)
+                    
+                    with col4:
+                        activity_rate = (active_users / total_users) * 100 if total_users > 0 else 0
+                        st.metric("Activity Rate", f"{activity_rate:.1f}%")
 
         # Show existing overview if available
         elif st.session_state.database_overview:
