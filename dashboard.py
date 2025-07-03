@@ -2659,6 +2659,27 @@ def main():
                         if st.session_state.users_list
                         else 0
                     )
+                    st.markdown("---")
+                    st.subheader("👥 User Activity Analysis")
+                    
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        total_users = len(fetch_all_users(st.session_state.token))
+                        st.metric("Total Registered Users", total_users)
+                    
+                    with col2:
+                        active_users = summary.get("total_users", 0)
+                        st.metric("Active Users", active_users)
+                    
+                    with col3:
+                        inactive_users = total_users - active_users
+                        st.metric("Users with Zero Records", inactive_users)
+                    
+                    with col4:
+                        activity_rate = (active_users / total_users) * 100 if total_users > 0 else 0
+                        st.metric("Activity Rate", f"{activity_rate:.1f}%")
+
 
                     # Create enhanced dashboard with all new features
                     create_advanced_overview_dashboard(
