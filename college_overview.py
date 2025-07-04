@@ -36,25 +36,19 @@ def safe_fetch_user_contributions(user_id, token, fetch_function, max_retries=3)
                 if "total_contributions" in user_data:
                     return user_data["total_contributions"]
                 else:
-                    st.warning(f"No 'total_contributions' field found for user {user_id}")
                     return 0
             else:
-                st.warning(f"Invalid response format for user {user_id}")
                 return 0
                 
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 500:
-                st.error(f"Server error (500) for user {user_id}, attempt {attempt + 1}")
                 if attempt == max_retries - 1:
                     return 0
             else:
-                st.error(f"HTTP error {e.response.status_code} for user {user_id}")
                 return 0
         except requests.exceptions.RequestException as e:
-            st.error(f"Network error for user {user_id}: {str(e)}")
             return 0
         except Exception as e:
-            st.error(f"Unexpected error for user {user_id}: {str(e)}")
             return 0
     
     return 0
@@ -111,64 +105,20 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
         st.warning("⚠️ No CSVs found in the /data folder.")
         return
 
-    # Debug CSV columns and sample data
-    st.write("**CSV Columns:**", df_all_college.columns.tolist())
-    st.write("**Sample CSV Data:**")
-    st.dataframe(df_all_college.head(3), use_container_width=True)
-    
-    # Check for phone number columns
-    phone_columns = [col for col in df_all_college.columns if any(keyword in col.lower() for keyword in ['phone', 'mobile', 'contact'])]
-    st.write("**Potential phone columns:**", phone_columns)
-    
-    # Debug: Show actual phone values from CSV
-    st.write("**Sample Phone Values from CSV:**")
-    for col in phone_columns:
-        if col in df_all_college.columns:
-            sample_phones = df_all_college[col].dropna().head(5).tolist()
-            st.write(f"- {col}: {sample_phones}")
-    
-    # Manual phone extraction test
-    st.write("**Phone Extraction Test:**")
-    for i, (_, row) in enumerate(df_all_college.head(5).iterrows()):
-        cleaned, original = get_phone_from_row(row)
-        name = row.get("FirstName", row.get("Name", row.get("Student Name", "Unknown")))
-        st.write(f"- {name}: {original} → {cleaned}")
-        if i >= 4:  # Show first 5 only
-            break
-    
     # Load users from API (cache to avoid multiple calls)
     if 'cached_users' not in st.session_state:
-        st.write("Fetching users from API...")
-        all_users = fetch_all_users(token)
-        st.session_state.cached_users = all_users
+        with st.spinner("Loading user data..."):
+            all_users = fetch_all_users(token)
+            st.session_state.cached_users = all_users
     else:
-        st.write("Using cached user data...")
         all_users = st.session_state.cached_users
         
     if not all_users:
         st.error("❌ Failed to fetch users from backend.")
         return
 
-    # Debug: Show sample data
-    st.write("**Debug Info:**")
-    st.write(f"Total users from API: {len(all_users)}")
-    st.write(f"Total rows in CSV: {len(df_all_college)}")
-    
-    # Show data quality issues for both phone columns
-    phone_stats = {}
-    for col in phone_columns:
-        if col in df_all_college.columns:
-            null_count = df_all_college[col].isna().sum()
-            valid_count = df_all_college[col].apply(clean_phone_number).notna().sum()
-            phone_stats[col] = {"null": null_count, "valid": valid_count}
-    
-    st.write("**Phone Data Quality:**")
-    for col, stats in phone_stats.items():
-        st.write(f"- {col}: {stats['null']} null, {stats['valid']} valid")
-    
-    # Normalize phone numbers with better handling
+    # Normalize phone numbers
     user_phone_map = {}
-    api_phone_samples = []
     
     for user in all_users:
         raw_phone = user.get("phone", "")
@@ -180,27 +130,6 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
                     "name": user.get("name", "Unknown User"),
                     "original_phone": raw_phone
                 }
-                # Collect samples for debugging
-                if len(api_phone_samples) < 10:
-                    api_phone_samples.append(f"{raw_phone} -> {cleaned_phone}")
-
-    st.write(f"Phone mapping created for {len(user_phone_map)} users")
-    
-    # Debug: Show sample phone numbers from API
-    st.write("**Sample API Phone Numbers:**")
-    for sample in api_phone_samples[:5]:
-        st.write(f"- {sample}")
-    
-    # Debug: Show sample CSV phone numbers
-    st.write("**Sample CSV Phone Numbers:**")
-    csv_phone_samples = []
-    for _, row in df_all_college.head(10).iterrows():
-        cleaned_phone, original_phone = get_phone_from_row(row)
-        if original_phone:
-            csv_phone_samples.append(f"{original_phone} -> {cleaned_phone}")
-    
-    for sample in csv_phone_samples[:5]:
-        st.write(f"- {sample}")
 
     # Build mapping with improved phone matching
     college_contributors = []
@@ -234,11 +163,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
             })
             unmatched_count += 1
 
-    st.write(f"**Matching Results:**")
-    st.write(f"✅ Matched phones: {matched_count}")
-    st.write(f"❌ Unmatched phones: {unmatched_count}")
-    
-    # Debug: Show breakdown by college
+    # College-wise registration status
     df_temp = pd.DataFrame(college_contributors)
     college_stats = df_temp.groupby('college').agg({
         'registered': ['count', 'sum']
@@ -247,7 +172,23 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
     college_stats['unregistered_students'] = college_stats['total_students'] - college_stats['registered_students']
     college_stats = college_stats.reset_index()
     
-    st.write("**College-wise Registration Status:**")
+    # Display registration overview
+    st.markdown("### 📊 Registration Overview")
+    
+    # Summary metrics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Students", len(df_all_college))
+    with col2:
+        st.metric("Registered", matched_count)
+    with col3:
+        st.metric("Unregistered", unmatched_count)
+    with col4:
+        registration_rate = (matched_count / len(df_all_college) * 100) if len(df_all_college) > 0 else 0
+        st.metric("Registration Rate", f"{registration_rate:.1f}%")
+    
+    # College-wise breakdown
+    st.markdown("#### College-wise Registration Status")
     st.dataframe(college_stats, use_container_width=True)
 
     if not college_contributors:
@@ -255,26 +196,28 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
         return
 
     # Add option to limit API calls for testing
-    st.write("**API Testing Options:**")
-    test_mode = st.checkbox("Enable test mode (limit API calls)", value=True)
-    if test_mode:
-        max_api_calls = st.slider("Max API calls to test", 1, 100, 20)
-    else:
-        max_api_calls = len([c for c in college_contributors if c["registered"]])
-
-    st.success(f"✅ Found {len(college_contributors)} college-mapped contributors.")
+    with st.expander("⚙️ API Settings"):
+        test_mode = st.checkbox("Enable test mode (limit API calls)", value=True)
+        if test_mode:
+            max_api_calls = st.slider("Max API calls to test", 1, 100, 20)
+        else:
+            max_api_calls = len([c for c in college_contributors if c["registered"]])
 
     # Fetch contributions with improved error handling
+    st.markdown("### 🔄 Fetching Contribution Data")
+    
     data = []
     progress = st.progress(0)
+    status_text = st.empty()
+    
     api_calls_made = 0
     successful_calls = 0
-    failed_calls = 0
     users_with_contributions = 0
     
     for i, contributor in enumerate(college_contributors):
         if contributor["registered"] and api_calls_made < max_api_calls:
             user_id = contributor["user_id"]
+            status_text.text(f"Fetching data for {contributor['name']}...")
             
             # Use the safe fetch function
             total = safe_fetch_user_contributions(user_id, token, fetch_user_contributions)
@@ -283,8 +226,6 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
             if total > 0:
                 successful_calls += 1
                 users_with_contributions += 1
-            else:
-                failed_calls += 1
                 
         else:
             total = 0  # Skip API call or unregistered users
@@ -293,28 +234,33 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
         progress.progress((i + 1) / len(college_contributors))
 
     progress.empty()
+    status_text.empty()
     
-    # Display comprehensive statistics
-    st.write("**API Call Statistics:**")
-    st.write(f"📞 API calls made: {api_calls_made}")
-    st.write(f"✅ Successful calls: {successful_calls}")
-    st.write(f"❌ Failed calls: {failed_calls}")
-    st.write(f"🏆 Users with contributions > 0: {users_with_contributions}")
-    
-    if failed_calls > 0:
-        st.error(f"⚠️ {failed_calls} API calls failed. Please check your backend server!")
+    # Display API call summary
+    if api_calls_made > 0:
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("API Calls Made", api_calls_made)
+        with col2:
+            st.metric("Successful Calls", successful_calls)
+        with col3:
+            st.metric("Users with Contributions", users_with_contributions)
 
     df = pd.DataFrame(data)
 
     # Show summary statistics
-    st.write("**Summary Statistics:**")
+    st.markdown("### 📈 Contribution Summary")
     registered_users = len(df[df['registered'] == True])
     users_with_contribs = len(df[df['contributions'] > 0])
     total_contributions = df['contributions'].sum()
     
-    st.write(f"📊 Total registered users: {registered_users}")
-    st.write(f"🏆 Users with contributions > 0: {users_with_contribs}")
-    st.write(f"📈 Total contributions: {total_contributions}")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Registered Users", registered_users)
+    with col2:
+        st.metric("Active Contributors", users_with_contribs)
+    with col3:
+        st.metric("Total Contributions", total_contributions)
 
     # DOWNLOAD SECTION - College-wise Downloads
     st.markdown("### 📥 Download CSV Files")
@@ -461,7 +407,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
         college_summary["percentage"] = (college_summary["total_contributions"] / college_summary["total_contributions"].sum()) * 100
         college_summary["avg_contributions"] = college_summary["avg_contributions"].round(2)
 
-        st.markdown("### 📊 College Contributions Summary")
+        st.markdown("### 📊 College Contributions Analysis")
         st.dataframe(college_summary, use_container_width=True)
 
         # Enhanced visualizations
@@ -496,9 +442,6 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
         fig.update_layout(xaxis_tickangle=-45)
         st.plotly_chart(fig, use_container_width=True)
 
-    else:
-        st.warning("⚠️ No contribution data available to display charts.")
-
     # Enhanced leaderboards
     st.markdown("### 🏆 Individual Contributor Leaderboard")
     if len(df) > 0:
@@ -513,27 +456,26 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
             for college in df["college"].unique():
                 college_df = df[(df["college"] == college) & (df["contributions"] > 0)]
                 if len(college_df) > 0:
-                    st.markdown(f"**{college}**")
-                    college_top = college_df.sort_values(by="contributions", ascending=False).head(10)
-                    st.dataframe(college_top[["name", "contributions", "phone"]], use_container_width=True)
+                    with st.expander(f"🏫 {college} Top Contributors"):
+                        college_top = college_df.sort_values(by="contributions", ascending=False).head(10)
+                        st.dataframe(college_top[["name", "contributions", "phone"]], use_container_width=True)
         else:
-            st.write("No users with contributions found")
+            st.info("No users with contributions found")
     
     # Enhanced unregistered section
-    st.markdown("### 🚫 Unregistered Students Details")
+    st.markdown("### 🚫 Unregistered Students")
     unregistered_df = df[df["registered"] == False]
     if len(unregistered_df) > 0:
         # Group by college for better organization
-        st.markdown("#### Unregistered Students by College")
         for college in unregistered_df["college"].unique():
             college_unreg = unregistered_df[unregistered_df["college"] == college]
-            st.markdown(f"**{college}** - {len(college_unreg)} students")
-            st.dataframe(college_unreg[["name", "phone", "cleaned_phone"]], use_container_width=True)
+            with st.expander(f"🏫 {college} - {len(college_unreg)} unregistered students"):
+                st.dataframe(college_unreg[["name", "phone", "cleaned_phone"]], use_container_width=True)
     else:
-        st.write("No unregistered students found")
+        st.success("🎉 All students are registered!")
 
     # Final summary
-    st.markdown("### 📋 Final Summary")
+    st.markdown("### 📋 Dashboard Summary")
     summary_data = {
         "Metric": [
             "Total Students in CSV",
