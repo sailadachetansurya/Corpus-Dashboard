@@ -4,6 +4,11 @@ import plotly.express as px
 import os, glob
 import time
 import requests
+import logging
+from typing import Dict, List, Optional
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 def load_college_files(folder_path="data"):
     college_files = glob.glob(os.path.join(folder_path, "*.csv"))
@@ -20,36 +25,110 @@ def load_college_files(folder_path="data"):
         return pd.DataFrame()
     return pd.concat(college_dfs, ignore_index=True)
 
-def safe_fetch_user_contributions(user_id, token, fetch_function, max_retries=3):
+def fetch_user_contributions_silent(user_id: str, token: str) -> Optional[Dict]:
+    """Fetch user contributions without UI elements for batch processing"""
+    if not user_id or not token:
+        return None
+    
+    url = f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions"
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        return data
+        
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            # User has no contributions
+            return {"total_contributions": 0}
+        else:
+            logger.error(f"HTTP error fetching contributions for user {user_id}: {e.response.status_code}")
+            return None
+    except requests.exceptions.Timeout:
+        logger.error(f"Timeout fetching contributions for user {user_id}")
+        return None
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Connection error fetching contributions for user {user_id}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error fetching contributions for user {user_id}: {e}")
+        return None
+
+def fetch_user_contributions(user_id: str, token: str) -> Optional[Dict]:
+    """Fetch enhanced user contributions using the new API endpoint (with UI for single user)"""
+    if not user_id or not token:
+        st.error("User ID and token are required")
+        return None
+    
+    url = f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions"
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    
+    try:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        status_text.text("🔄 Fetching user contributions...")
+        progress_bar.progress(30)
+        
+        response = requests.get(url, headers=headers, timeout=30)
+        progress_bar.progress(70)
+        status_text.text("📊 Processing contributions data...")
+        
+        response.raise_for_status()
+        data = response.json()
+        
+        progress_bar.progress(100)
+        status_text.text("✅ Contributions loaded!")
+        time.sleep(0.5)
+        progress_bar.empty()
+        status_text.empty()
+        
+        return data
+        
+    except requests.exceptions.HTTPError as e:
+        progress_bar.empty()
+        status_text.empty()
+        if e.response.status_code == 404:
+            st.warning(f"No contributions found for user {user_id}")
+            return {"total_contributions": 0}
+        else:
+            st.error(f"❌ Failed to fetch contributions: HTTP {e.response.status_code}")
+            return None
+    except Exception as e:
+        progress_bar.empty()
+        status_text.empty()
+        logger.error(f"Unexpected error fetching contributions: {e}")
+        st.error(f"❌ Unexpected error: {e}")
+        return None
+
+def safe_fetch_user_contributions(user_id, token, max_retries=3):
     """
-    Safely fetch user contributions with retry logic and better error handling
+    Safely fetch user contributions with retry logic and silent error handling
     """
     for attempt in range(max_retries):
         try:
             # Add a small delay between requests to avoid overwhelming the server
             if attempt > 0:
-                time.sleep(1)
+                time.sleep(0.5)
             
-            user_data = fetch_function(user_id, token)
+            user_data = fetch_user_contributions_silent(user_id, token)
             
-            if user_data and isinstance(user_data, dict):
-                if "total_contributions" in user_data:
-                    return user_data["total_contributions"]
+            if user_data:
+                if isinstance(user_data, dict):
+                    if "total_contributions" in user_data:
+                        return user_data["total_contributions"]
+                    else:
+                        return 0
                 else:
                     return 0
             else:
                 return 0
                 
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 500:
-                if attempt == max_retries - 1:
-                    return 0
-            else:
-                return 0
-        except requests.exceptions.RequestException as e:
-            return 0
         except Exception as e:
-            return 0
+            logger.error(f"Error in safe_fetch_user_contributions for user {user_id}: {e}")
+            if attempt == max_retries - 1:
+                return 0
     
     return 0
 
@@ -92,7 +171,7 @@ def get_phone_from_row(row):
     
     return None, None
 
-def display_college_overview(fetch_all_users, fetch_user_contributions, token: str):
+def display_college_overview(fetch_all_users, fetch_user_contributions_param, token: str):
     st.title("🏫 College Overview Dashboard")
 
     if not token:
@@ -197,11 +276,16 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
 
     # Add option to limit API calls for testing
     with st.expander("⚙️ API Settings"):
-        test_mode = st.checkbox("Enable test mode (limit API calls)", value=True)
+        test_mode = st.checkbox("Enable test mode (limit API calls)", value=False)
         if test_mode:
-            max_api_calls = st.slider("Max API calls to test", 1, 100, 20)
+            max_api_calls = st.slider("Max API calls to test", 1, 100, 10)
         else:
             max_api_calls = len([c for c in college_contributors if c["registered"]])
+        
+        # Debug mode for API responses
+        debug_mode = st.checkbox("Debug API responses (show first response)", value=False)
+        
+        st.info(f"Will process {min(max_api_calls, len([c for c in college_contributors if c['registered']]))} registered users")
 
     # Fetch contributions with improved error handling
     st.markdown("### 🔄 Fetching Contribution Data")
@@ -213,22 +297,41 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
     api_calls_made = 0
     successful_calls = 0
     users_with_contributions = 0
+    failed_calls = 0
+    debug_shown = False
+    
+    registered_users = [c for c in college_contributors if c["registered"]]
     
     for i, contributor in enumerate(college_contributors):
         if contributor["registered"] and api_calls_made < max_api_calls:
             user_id = contributor["user_id"]
-            status_text.text(f"Fetching data for {contributor['name']}...")
+            status_text.text(f"Processing {contributor['name']} ({api_calls_made + 1}/{min(max_api_calls, len(registered_users))})...")
             
-            # Use the safe fetch function
-            total = safe_fetch_user_contributions(user_id, token, fetch_user_contributions)
+            # Use the safe fetch function with silent API calls
+            try:
+                total = safe_fetch_user_contributions(user_id, token)
+                
+                # Debug: Show first API response if debug mode is enabled
+                if debug_mode and not debug_shown and total > 0:
+                    st.write("**Debug - First successful API call:**")
+                    st.write(f"User ID: {user_id}, Contributions: {total}")
+                    debug_shown = True
+                
+                if total > 0:
+                    users_with_contributions += 1
+                    successful_calls += 1
+                else:
+                    failed_calls += 1
+                    
+            except Exception as e:
+                logger.error(f"Error fetching contributions for {contributor['name']}: {e}")
+                total = 0
+                failed_calls += 1
             
             api_calls_made += 1
-            if total > 0:
-                successful_calls += 1
-                users_with_contributions += 1
                 
         else:
-            total = 0  # Skip API call or unregistered users
+            total = 0  # Skip API call for unregistered users or if limit reached
 
         data.append({**contributor, "contributions": total})
         progress.progress((i + 1) / len(college_contributors))
@@ -236,27 +339,26 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
     progress.empty()
     status_text.empty()
     
-    # Display API call summary
+    # Show API summary
     if api_calls_made > 0:
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("API Calls Made", api_calls_made)
-        with col2:
-            st.metric("Successful Calls", successful_calls)
-        with col3:
-            st.metric("Users with Contributions", users_with_contributions)
+        st.success(f"✅ API Processing Complete: {api_calls_made} calls made, {users_with_contributions} users have contributions")
+        
+        if users_with_contributions == 0:
+            st.warning("⚠️ No users found with contributions. This might indicate an API issue or all users have zero contributions.")
+        else:
+            st.info(f"📊 Found {users_with_contributions} active contributors out of {api_calls_made} registered users")
 
     df = pd.DataFrame(data)
 
     # Show summary statistics
     st.markdown("### 📈 Contribution Summary")
-    registered_users = len(df[df['registered'] == True])
+    registered_users_count = len(df[df['registered'] == True])
     users_with_contribs = len(df[df['contributions'] > 0])
     total_contributions = df['contributions'].sum()
     
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Registered Users", registered_users)
+        st.metric("Registered Users", registered_users_count)
     with col2:
         st.metric("Active Contributors", users_with_contribs)
     with col3:
@@ -278,7 +380,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
         if len(registered_download_df) > 0:
             registered_csv = registered_download_df.to_csv(index=False)
             st.download_button(
-                f"⬇️ Download All Registered Users ({len(registered_download_df)} users)",
+                f"⬇️ Download Total Registered Users ({len(registered_download_df)} users)",
                 registered_csv,
                 "all_registered_users.csv",
                 "text/csv",
@@ -293,7 +395,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
         if len(unmatched_download_df) > 0:
             unmatched_csv = unmatched_download_df.to_csv(index=False)
             st.download_button(
-                f"⬇️ Download All Unmatched Users ({len(unmatched_download_df)} users)",
+                f"⬇️ Download Total Unregistered Users ({len(unmatched_download_df)} users)",
                 unmatched_csv,
                 "all_unmatched_users.csv",
                 "text/csv",
@@ -496,3 +598,84 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
     }
     summary_df = pd.DataFrame(summary_data)
     st.dataframe(summary_df, use_container_width=True)
+
+def fetch_user_contributions_by_media_type(
+    user_id: str, media_type: str, token: str
+) -> List[Dict]:
+    """Fetch user contributions by media type from the API"""
+    if not user_id or not token or not media_type:
+        st.error("User ID, media type, and token are required")
+        return []
+
+    # Validate media type
+    valid_media_types = ["text", "audio", "image", "video"]
+    if media_type not in valid_media_types:
+        st.error(f"Invalid media type. Must be one of: {', '.join(valid_media_types)}")
+        return []
+
+    url = (
+        f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions/{media_type}"
+    )
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+
+    try:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+
+        status_text.text(f"🔄 Fetching your {media_type} contributions...")
+        progress_bar.progress(30)
+
+        response = requests.get(url, headers=headers, timeout=30)
+        progress_bar.progress(70)
+        status_text.text(f"📊 Processing {media_type} contributions...")
+
+        response.raise_for_status()
+        data = response.json()
+
+        progress_bar.progress(100)
+        status_text.text(f"✅ {media_type.title()} contributions loaded!")
+        time.sleep(0.5)
+
+        progress_bar.empty()
+        status_text.empty()
+
+        if not isinstance(data, list):
+            logger.warning(f"Expected list, got {type(data)}")
+            st.warning("⚠️ Unexpected data format received from server")
+            return []
+
+        logger.info(f"Successfully fetched {len(data)} {media_type} contributions")
+        return data
+
+    except requests.exceptions.Timeout:
+        progress_bar.empty()
+        status_text.empty()
+        st.error(f"⏱️ Request timed out. Please try again.")
+        return []
+    except requests.exceptions.ConnectionError:
+        progress_bar.empty()
+        status_text.empty()
+        st.error(
+            "🌐 Unable to connect to the server. Please check your internet connection."
+        )
+        return []
+    except requests.exceptions.HTTPError as e:
+        progress_bar.empty()
+        status_text.empty()
+        if e.response.status_code == 401:
+            st.error("🔐 Authentication failed. Please log in again.")
+            st.session_state.authenticated = False
+        elif e.response.status_code == 404:
+            st.warning(f"No {media_type} contributions found for this user.")
+            return []
+        else:
+            st.error(
+                f"❌ Failed to fetch {media_type} contributions: HTTP {e.response.status_code}"
+            )
+        return []
+    except Exception as e:
+        progress_bar.empty()
+        status_text.empty()
+        logger.error(f"Unexpected error fetching {media_type} contributions: {e}")
+        st.error(f"❌ Unexpected error: {e}")
+        return []
