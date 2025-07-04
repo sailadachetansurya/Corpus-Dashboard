@@ -16,6 +16,7 @@ import base64
 import json
 import logging
 import time
+from college_overview import display_college_overview
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -2340,6 +2341,7 @@ def main():
                     "🏠 My Records",
                     "🔍 Search User",
                     "🌐 Database Overview",
+                    "🏫 College Overview",
                     "⚙️ Settings",
                 ],
                 key="dashboard_option",
@@ -2715,6 +2717,9 @@ def main():
                 st.markdown("### 📥 Export Database Summary")
                 df = pd.DataFrame(st.session_state.database_overview)
                 create_export_section(df, summary)
+
+    elif dashboard_mode == "🏫 College Overview":
+       display_college_overview(fetch_all_users, fetch_user_contributions, st.session_state.token)
 
 
     elif dashboard_mode == "⚙️ Settings":
