@@ -85,15 +85,16 @@ def get_phone_from_row(row):
     """
     Extract phone number from row, handling multiple phone columns
     """
-    # Check both phone columns (with and without trailing space)
-    phone_columns = ["Phone Number", "Phone Number "]
+    # Check all possible phone column variations
+    phone_columns = ["Phone Number", "Phone Number ", "phone", "Phone", "mobile", "Mobile", "contact", "Contact"]
     
     for col in phone_columns:
         if col in row.index:
             phone = row[col]
-            cleaned = clean_phone_number(phone)
-            if cleaned:
-                return cleaned, phone  # Return both cleaned and original
+            if pd.notna(phone) and str(phone).strip():  # Check if phone is not null and not empty
+                cleaned = clean_phone_number(phone)
+                if cleaned:
+                    return cleaned, str(phone).strip()  # Return both cleaned and original
     
     return None, None
 
@@ -110,12 +111,30 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
         st.warning("⚠️ No CSVs found in the /data folder.")
         return
 
-    # Debug CSV columns
+    # Debug CSV columns and sample data
     st.write("**CSV Columns:**", df_all_college.columns.tolist())
+    st.write("**Sample CSV Data:**")
+    st.dataframe(df_all_college.head(3), use_container_width=True)
     
     # Check for phone number columns
-    phone_columns = [col for col in df_all_college.columns if 'phone' in col.lower() or 'mobile' in col.lower()]
+    phone_columns = [col for col in df_all_college.columns if any(keyword in col.lower() for keyword in ['phone', 'mobile', 'contact'])]
     st.write("**Potential phone columns:**", phone_columns)
+    
+    # Debug: Show actual phone values from CSV
+    st.write("**Sample Phone Values from CSV:**")
+    for col in phone_columns:
+        if col in df_all_college.columns:
+            sample_phones = df_all_college[col].dropna().head(5).tolist()
+            st.write(f"- {col}: {sample_phones}")
+    
+    # Manual phone extraction test
+    st.write("**Phone Extraction Test:**")
+    for i, (_, row) in enumerate(df_all_college.head(5).iterrows()):
+        cleaned, original = get_phone_from_row(row)
+        name = row.get("FirstName", row.get("Name", row.get("Student Name", "Unknown")))
+        st.write(f"- {name}: {original} → {cleaned}")
+        if i >= 4:  # Show first 5 only
+            break
     
     # Load users from API (cache to avoid multiple calls)
     if 'cached_users' not in st.session_state:
@@ -188,22 +207,10 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
     matched_count = 0
     unmatched_count = 0
     
-    # Debug: Track specific BITS students
-    bits_debug = []
-    
     for _, row in df_all_college.iterrows():
         cleaned_phone, original_phone = get_phone_from_row(row)
         college = row.get("college", "Unknown College")
         name = row.get("FirstName", row.get("Name", row.get("Student Name", "Unknown")))
-        
-        # Special debugging for BITS students
-        if "bits" in college.lower() or "pilani" in college.lower():
-            bits_debug.append({
-                "name": name,
-                "original_phone": original_phone,
-                "cleaned_phone": cleaned_phone,
-                "in_api": cleaned_phone in user_phone_map if cleaned_phone else False
-            })
         
         if cleaned_phone and cleaned_phone in user_phone_map:
             user_data = user_phone_map[cleaned_phone]
@@ -231,42 +238,17 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
     st.write(f"✅ Matched phones: {matched_count}")
     st.write(f"❌ Unmatched phones: {unmatched_count}")
     
-    # Debug BITS students specifically
-    if bits_debug:
-        st.write("**BITS Students Debug:**")
-        bits_df = pd.DataFrame(bits_debug)
-        st.dataframe(bits_df, use_container_width=True)
-        
-        # Show specific mismatches
-        unmatched_bits = bits_df[bits_df["in_api"] == False]
-        if len(unmatched_bits) > 0:
-            st.write(f"**{len(unmatched_bits)} BITS students not found in API:**")
-            for _, student in unmatched_bits.head(5).iterrows():
-                st.write(f"- {student['name']}: {student['original_phone']} -> {student['cleaned_phone']}")
-                
-                # Check if similar numbers exist in API
-                if student['cleaned_phone']:
-                    similar_in_api = [phone for phone in user_phone_map.keys() 
-                                    if phone.startswith(student['cleaned_phone'][:3])]
-                    if similar_in_api:
-                        st.write(f"  Similar numbers in API: {similar_in_api[:3]}")
+    # Debug: Show breakdown by college
+    df_temp = pd.DataFrame(college_contributors)
+    college_stats = df_temp.groupby('college').agg({
+        'registered': ['count', 'sum']
+    }).round(2)
+    college_stats.columns = ['total_students', 'registered_students']
+    college_stats['unregistered_students'] = college_stats['total_students'] - college_stats['registered_students']
+    college_stats = college_stats.reset_index()
     
-    # Additional debug: Check for any phone number format issues
-    st.write("**Phone Number Format Analysis:**")
-    csv_phone_lengths = {}
-    for _, row in df_all_college.iterrows():
-        cleaned_phone, original_phone = get_phone_from_row(row)
-        if cleaned_phone:
-            length = len(cleaned_phone)
-            csv_phone_lengths[length] = csv_phone_lengths.get(length, 0) + 1
-    
-    api_phone_lengths = {}
-    for phone in user_phone_map.keys():
-        length = len(phone)
-        api_phone_lengths[length] = api_phone_lengths.get(length, 0) + 1
-    
-    st.write(f"CSV phone lengths: {csv_phone_lengths}")
-    st.write(f"API phone lengths: {api_phone_lengths}")
+    st.write("**College-wise Registration Status:**")
+    st.dataframe(college_stats, use_container_width=True)
 
     if not college_contributors:
         st.warning("⚠️ No contributors found in CSV data.")
@@ -334,40 +316,136 @@ def display_college_overview(fetch_all_users, fetch_user_contributions, token: s
     st.write(f"🏆 Users with contributions > 0: {users_with_contribs}")
     st.write(f"📈 Total contributions: {total_contributions}")
 
-    # DOWNLOAD SECTION - MOVED UP FOR BETTER VISIBILITY
+    # DOWNLOAD SECTION - College-wise Downloads
     st.markdown("### 📥 Download CSV Files")
     
+    # Create tabs for each college
+    colleges = df["college"].unique()
+    
+    # Overall downloads first
+    st.markdown("#### 📊 Overall Downloads")
     col1, col2 = st.columns(2)
     
     with col1:
-        # Registered users with contributions
+        # All registered users
         registered_download_df = df[df["registered"] == True][["name", "college", "contributions", "phone", "cleaned_phone"]]
         if len(registered_download_df) > 0:
             registered_csv = registered_download_df.to_csv(index=False)
             st.download_button(
-                f"⬇️ Download Registered Users ({len(registered_download_df)} users)",
+                f"⬇️ Download All Registered Users ({len(registered_download_df)} users)",
                 registered_csv,
-                "registered_contributions.csv",
+                "all_registered_users.csv",
                 "text/csv",
-                key="registered_download"
+                key="all_registered_download"
             )
         else:
             st.write("No registered users to download")
     
     with col2:
-        # Unmatched users (the 99 people you want to download)
+        # All unmatched users
         unmatched_download_df = df[df["registered"] == False][["name", "college", "phone", "cleaned_phone"]]
         if len(unmatched_download_df) > 0:
             unmatched_csv = unmatched_download_df.to_csv(index=False)
             st.download_button(
-                f"⬇️ Download Unmatched Users ({len(unmatched_download_df)} users)",
+                f"⬇️ Download All Unmatched Users ({len(unmatched_download_df)} users)",
                 unmatched_csv,
-                "unmatched_students.csv",
+                "all_unmatched_users.csv",
                 "text/csv",
-                key="unmatched_download"
+                key="all_unmatched_download"
             )
         else:
             st.write("No unmatched users to download")
+    
+    # College-wise downloads
+    st.markdown("#### 🏫 College-wise Downloads")
+    
+    # Create tabs for each college
+    if len(colleges) > 1:
+        tabs = st.tabs([f"{college} ({len(df[df['college'] == college])})" for college in colleges])
+        
+        for i, college in enumerate(colleges):
+            with tabs[i]:
+                college_df = df[df["college"] == college]
+                
+                # Statistics for this college
+                registered_count = len(college_df[college_df["registered"] == True])
+                unregistered_count = len(college_df[college_df["registered"] == False])
+                total_contributions = college_df["contributions"].sum()
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Total Students", len(college_df))
+                with col2:
+                    st.metric("Registered", registered_count)
+                with col3:
+                    st.metric("Unregistered", unregistered_count)
+                
+                # Download buttons for this college
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Registered users for this college
+                    college_registered = college_df[college_df["registered"] == True][["name", "contributions", "phone", "cleaned_phone"]]
+                    if len(college_registered) > 0:
+                        college_reg_csv = college_registered.to_csv(index=False)
+                        st.download_button(
+                            f"⬇️ Registered Users ({len(college_registered)})",
+                            college_reg_csv,
+                            f"{college.replace(' ', '_')}_registered.csv",
+                            "text/csv",
+                            key=f"{college}_registered_download"
+                        )
+                    else:
+                        st.write("No registered users")
+                
+                with col2:
+                    # Unregistered users for this college
+                    college_unregistered = college_df[college_df["registered"] == False][["name", "phone", "cleaned_phone"]]
+                    if len(college_unregistered) > 0:
+                        college_unreg_csv = college_unregistered.to_csv(index=False)
+                        st.download_button(
+                            f"⬇️ Unregistered Users ({len(college_unregistered)})",
+                            college_unreg_csv,
+                            f"{college.replace(' ', '_')}_unregistered.csv",
+                            "text/csv",
+                            key=f"{college}_unregistered_download"
+                        )
+                    else:
+                        st.write("No unregistered users")
+                
+                # Show preview of data
+                if len(college_df) > 0:
+                    st.markdown("**Preview:**")
+                    st.dataframe(college_df[["name", "phone", "contributions", "registered"]], use_container_width=True)
+    else:
+        # Single college case
+        college = colleges[0]
+        college_df = df[df["college"] == college]
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            college_registered = college_df[college_df["registered"] == True][["name", "contributions", "phone", "cleaned_phone"]]
+            if len(college_registered) > 0:
+                college_reg_csv = college_registered.to_csv(index=False)
+                st.download_button(
+                    f"⬇️ {college} - Registered Users ({len(college_registered)})",
+                    college_reg_csv,
+                    f"{college.replace(' ', '_')}_registered.csv",
+                    "text/csv",
+                    key=f"{college}_registered_download"
+                )
+        
+        with col2:
+            college_unregistered = college_df[college_df["registered"] == False][["name", "phone", "cleaned_phone"]]
+            if len(college_unregistered) > 0:
+                college_unreg_csv = college_unregistered.to_csv(index=False)
+                st.download_button(
+                    f"⬇️ {college} - Unregistered Users ({len(college_unregistered)})",
+                    college_unreg_csv,
+                    f"{college.replace(' ', '_')}_unregistered.csv",
+                    "text/csv",
+                    key=f"{college}_unregistered_download"
+                )
 
     # Only show charts if we have data
     if total_contributions > 0:
