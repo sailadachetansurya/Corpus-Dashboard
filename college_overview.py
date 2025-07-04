@@ -31,12 +31,20 @@ def fetch_user_contributions_silent(user_id: str, token: str) -> Optional[Dict]:
         return None
     
     url = f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions"
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {token}", 
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
     
     try:
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
         data = response.json()
+        
+        # Debug: Log the actual response structure
+        logger.info(f"API Response for user {user_id}: {data}")
+        
         return data
         
     except requests.exceptions.HTTPError as e:
@@ -63,7 +71,11 @@ def fetch_user_contributions(user_id: str, token: str) -> Optional[Dict]:
         return None
     
     url = f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions"
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {token}", 
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
     
     try:
         progress_bar = st.progress(0)
@@ -116,10 +128,22 @@ def safe_fetch_user_contributions(user_id, token, max_retries=3):
             
             if user_data:
                 if isinstance(user_data, dict):
+                    # Check for total_contributions field first
                     if "total_contributions" in user_data:
                         return user_data["total_contributions"]
+                    # If not found, try to calculate from contributions_by_media_type
+                    elif "contributions_by_media_type" in user_data:
+                        contributions_by_type = user_data["contributions_by_media_type"]
+                        if isinstance(contributions_by_type, dict):
+                            total = sum(contributions_by_type.values())
+                            return total
+                    # If neither found, try to count individual contribution arrays
                     else:
-                        return 0
+                        total = 0
+                        for key in ["audio_contributions", "video_contributions", "text_contributions", "image_contributions"]:
+                            if key in user_data and isinstance(user_data[key], list):
+                                total += len(user_data[key])
+                        return total
                 else:
                     return 0
             else:
@@ -312,16 +336,20 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
                 total = safe_fetch_user_contributions(user_id, token)
                 
                 # Debug: Show first API response if debug mode is enabled
-                if debug_mode and not debug_shown and total > 0:
-                    st.write("**Debug - First successful API call:**")
-                    st.write(f"User ID: {user_id}, Contributions: {total}")
+                if debug_mode and not debug_shown:
+                    raw_response = fetch_user_contributions_silent(user_id, token)
+                    st.write("**Debug - First API call response:**")
+                    st.write(f"User ID: {user_id}")
+                    st.write(f"Parsed contributions: {total}")
+                    st.write("Raw API response:")
+                    st.json(raw_response)
                     debug_shown = True
                 
                 if total > 0:
                     users_with_contributions += 1
                     successful_calls += 1
                 else:
-                    failed_calls += 1
+                    successful_calls += 1  # Still successful even if 0 contributions
                     
             except Exception as e:
                 logger.error(f"Error fetching contributions for {contributor['name']}: {e}")
@@ -341,10 +369,10 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
     
     # Show API summary
     if api_calls_made > 0:
-        st.success(f"✅ API Processing Complete: {api_calls_made} calls made, {users_with_contributions} users have contributions")
+        st.success(f"✅ API Processing Complete: {api_calls_made} calls made, {successful_calls} successful, {users_with_contributions} users have contributions")
         
         if users_with_contributions == 0:
-            st.warning("⚠️ No users found with contributions. This might indicate an API issue or all users have zero contributions.")
+            st.warning("⚠️ No users found with contributions. Check the debug output above to see the API response structure.")
         else:
             st.info(f"📊 Found {users_with_contributions} active contributors out of {api_calls_made} registered users")
 
@@ -614,7 +642,7 @@ def fetch_user_contributions_by_media_type(
         return []
 
     url = (
-        f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions/{media_type}"
+        f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions/"
     )
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
 
