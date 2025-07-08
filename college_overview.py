@@ -126,7 +126,7 @@ def safe_fetch_user_contributions(user_id, token, max_retries=3):
         try:
             # Add a small delay between requests to avoid overwhelming the server
             if attempt > 0:
-                time.sleep(0.5)
+                time.sleep(0.2)
             
             user_data = fetch_user_contributions_silent(user_id, token)
             
