@@ -1,14 +1,14 @@
 FirstName,Phone Number,user_id,matched_name,matched_phone,match_type,match_status
-B. Sai Santosh,8374263327,b432052d-6791-4f45-8e4d-e523ed818694,sai,+919182439535,partial_name,found
+B. Sai Santosh,8374263327,56d08343-a90f-4149-8293-73a40bf5592f,Sai Santosh,+918374263327,exact_phone,found
 N. Raja Sujith Varma,9347498457,0bb0f841-9cfa-472f-b770-6a544b457262,N. Raja Sujith Varma,+919347498457,exact_name,found
 G Pranathish Reddy,9100266667,52ecea08-66e1-4687-abba-2993245465db,G Pranathish Reddy,+919100266667,exact_name,found
 VEERLA DUSHYANTH KUMAR,8179621213,6f8bfa6e-3560-40df-887e-0c65479866b3,VEERLA DUSHYANTH KUMAR,+918179621213,exact_name,found
-Somisetti Ratan Sree Sai,8328611943,b432052d-6791-4f45-8e4d-e523ed818694,sai,+919182439535,partial_name,found
+Somisetti Ratan Sree Sai,8328611943,cacb349c-299f-4a14-a533-0ae006b0a503,Ratan,+918328611943,exact_phone,found
 Shanmukh sai vignesh gorantla,8978593590,cf8f74f4-afc2-4b52-b906-5074d4bbb83e,shanmukh Sai vignesh gorantla,+918978593590,exact_name,found
 Bhavani pitla,9014986560,,,,,not_found
 Reethika puducheri,6305832116,696e2229-c3b3-458e-b5af-914df1ec1c35,Reethika puducheri,+916305832116,exact_name,found
-likitha reddy,7995793213,8794ebf8-9a50-4bce-b7c6-981039278e68,Lakkam likitha reddy,+919182049724,partial_name,found
-yes,8121574595,10e99d5b-dafd-4481-b857-b1e116f95883,Shaik Yeswanth,+919063585503,partial_name,found
+likitha reddy,7995793213,2cb74a1a-fe04-4347-8c6e-07b10768d421,p. likitha reddy,+917995793213,exact_phone,found
+yes,8121574595,adacb3b0-d9de-4809-998f-8ef5481a7189,Badegharwale Akshay Singh,+918121574595,exact_phone,found
 BADEGHARWALE ABHISHEK SINGH,7416744595,3e143b62-f700-41dd-ac47-724821923ac7,Badegharwale Abhishek Singh,+917416744595,exact_name,found
 Yandamuri Nagababu,9701771895,343bf12c-b06d-4873-ae7f-99c8d156a89a,Yandamuri Nagababu,+919701771895,exact_name,found
 kasu Sai Kiran Reddy,8464885177,720b3418-4ab4-46d5-a308-e8f50f44de85,kasu Sai Kiran Reddy,+918464885177,exact_name,found
@@ -20,7 +20,7 @@ KODATI VENKAT SURYA,9390944959,eed18a11-f4f0-4a7d-a41a-af81c58b8c2a,KODATI VENKA
 REKHA ANJANA MOVIDI,7013321682,1e0975dc-5d96-4a8e-b1b1-b03d13992903,Rekha Anjana Movidi,+917013321682,exact_name,found
 Punnam Goutham,9441029237,86d883d2-d7bd-4659-b49d-2fb52a2a7f31,Punnam Goutham,+919441029237,exact_name,found
 Thanay akula,8143246741,6ff65ac7-81ab-4578-960e-54f38f92969f,Thanay.A,+918143246741,exact_phone,found
-Sathvik mokalla,8919051763,ae6a663a-9b1d-4f85-a3e3-6acb15edfabf,Sathvik,+918919051763,partial_name,found
+Sathvik mokalla,8919051763,ae6a663a-9b1d-4f85-a3e3-6acb15edfabf,Sathvik,+918919051763,exact_phone,found
 Nizamuddin Mallick,6305037988,91332d01-aba5-42a7-8bd2-257c78d2dd11,Nizamuddin Mallick,+916305037988,exact_name,found
 BEERLA ASHWINI,7337089686,e2eb7dfd-08d1-47db-890b-1547edfb60ea,BEERLA ASHWINI,+917337089686,exact_name,found
 N.SaiMukesh,7330703104,7c20c934-f3aa-4732-91f4-ba21c360f2a4,N.SaiMukesh,+917330703104,exact_name,found
@@ -28,36 +28,36 @@ Shirdi,9440622030,182366ec-23be-413c-824b-1be9f97d8ce9,Shirdi,+919440622030,exac
 B Bharath Kumar Reddy,7013533820,ca5d6289-05e8-42bf-b189-413b403d36ee,B Bharath Kumar Reddy,+917013533820,exact_name,found
 Boreddy Rama Gharnitha Reddy,7416768580,6869fcd5-7847-4c2c-b694-47c6a29f6255,Boreddy Rama Gharnitha Reddy,+917416768580,exact_name,found
 Shaik Suhana,8309617984,8628b11b-421e-4ff3-96ba-8e32fceda361,Shaik Suhana,+918309617984,exact_name,found
-P.Srivallika,8331045314,7bd9907b-56bc-4389-bc13-958aa92265ec,srivallika,+918331045314,partial_name,found
+P.Srivallika,8331045314,7bd9907b-56bc-4389-bc13-958aa92265ec,srivallika,+918331045314,exact_phone,found
 23STUCHH010662,9391098619,f073e84b-a07a-4a30-b56e-99091ac1c032,M.Kiran Reddy,+919391098619,exact_phone,found
 Mulpuru Siva Sandeep,8019131385,3ee7d2c7-9b8f-4071-a990-4cd87e4ab1d5,MULPURU SIVA SANDEEP,+918019131385,exact_name,found
 S.V.Ganesh,8143831805,f237c868-7fb9-44de-a061-78554a255ac1,S.V.Ganesh,+918143831805,exact_name,found
-Sadula Sainath Reddy,7416067606,b432052d-6791-4f45-8e4d-e523ed818694,sai,+919182439535,partial_name,found
+Sadula Sainath Reddy,7416067606,f09992c3-fc52-4957-9c50-5557c7227b3e,sainathreddysadula,+917416067606,exact_phone,found
 D.Meghana,7036212626,598732db-50cb-4bf9-bb24-31f134a8df8d,Meghana Dasari,+917036212626,exact_phone,found
-Gouru Vardhan Sai Reddy,9392605359,b432052d-6791-4f45-8e4d-e523ed818694,sai,+919182439535,partial_name,found
+Gouru Vardhan Sai Reddy,9392605359,f9b33859-6dfb-443e-bf39-9a07f4ed30e7,G Vardhan Sai reddy,+919392605359,exact_phone,found
 Moole Nithin Reddy,9000366347,fac3b2dd-3e99-42f5-9f4b-f57cfb0c7048,Moole Nithin Reddy,+919000366347,exact_name,found
 EEDIGI HARICHARAN GOUD,8309969245,f92f36c4-5b47-4982-a2d9-ae1c1be291d3,EEDIGI HARICHARAN GOUD,+918309969245,exact_name,found
 G Mohana Sindhuja,8121017133,b00760a0-3e47-4936-873f-aaf2b76ae3ef,G Mohana Sindhuja,+918121017133,exact_name,found
 Sriyan.A,7032226745,77afc2fd-bb94-4691-9b48-92a516ccae80,Sriyan.A,+917032226745,exact_name,found
-Dake Shimya Sailas,9014387349,b432052d-6791-4f45-8e4d-e523ed818694,sai,+919182439535,partial_name,found
+Dake Shimya Sailas,9014387349,,,,,not_found
 U Subramanyam,8179524014,9f17252a-318d-4a62-9e70-4b6a2ea3acb4,U Subramanyam,+918179524014,exact_name,found
 shiva naga arjun parvathi,9347169508,b40bc3d2-1843-4cb8-963a-92be7c97f652,shiva Naga Arjun parvathi,+919347169508,exact_name,found
 AMBATI HARSHA VARDHAN TEJA,9010057176,ff8fb4c3-4b06-4b3a-8fde-ba95792ce45f,AMBATI HARSHA VARDHAN TEJA,+919010057176,exact_name,found
 AMBATI YASWANTH KUMAR,6305071927,b7e1e1b6-e3d3-4e28-8c43-90dfcd5c1ed1,Ambati yaswanth kumar,+916305071927,exact_name,found
-yes,9398537049,10e99d5b-dafd-4481-b857-b1e116f95883,Shaik Yeswanth,+919063585503,partial_name,found
+yes,9398537049,,,,,not_found
 CHEERA NARESH,7093870130,dc171f6f-735f-4724-8c49-b859d81e8dcf,cheera Naresh,+917093870130,exact_name,found
 SairishikaDasari,8897971256,1b2e0eb3-d001-442e-8dde-422238f5fd7e,Sairishika Dasari,+918897971256,exact_name,found
 Chalasani Vrishin Naidu,7799224425,c909253f-5eb7-4f29-a92c-6bc9b2ac2024,Chalasani Vrishin Naidu,+917799224425,exact_name,found
-Sriteja Kallepalli,9491411124,2194e07a-e6e0-4911-94be-b9a3e06f632f,Sriteja K,+919491411124,partial_name,found
+Sriteja Kallepalli,9491411124,2194e07a-e6e0-4911-94be-b9a3e06f632f,Sriteja K,+919491411124,exact_phone,found
 shiva naga arjun parvathi,9347169508,b40bc3d2-1843-4cb8-963a-92be7c97f652,shiva Naga Arjun parvathi,+919347169508,exact_name,found
 Navyasree,9505883083,0b14afe9-eadc-4942-9e78-3ea793f5c2c5,Navyasree,+919505883083,exact_name,found
 Bheemarapu Sathvik,8688938470,e51a980e-b7d7-43e4-a909-44ebd0abedf6,Bheemarapu Sathvik,+918688938470,exact_name,found
 Gade Bhuvan,8897141599,75dbe692-1042-4950-9809-732ead8cff02,Gade Bhuvan,+918897141599,exact_name,found
 Maddali Vaishnavi,9951089184,3bff765e-d88e-4a29-9f3d-f390402a0c9f,Maddali Vaishnavi,+919951089184,exact_name,found
-Sanganabatla Sai Swapnith,9392418881,b432052d-6791-4f45-8e4d-e523ed818694,sai,+919182439535,partial_name,found
+Sanganabatla Sai Swapnith,9392418881,,,,,not_found
 Kondakalla Varsha,8341420989,c06779a8-e2d0-4a04-b910-bbe8a1813635,Kondakalla Varsha,+918341420989,exact_name,found
 Kadiyala Jitendra,8523084065,d8e7317e-b10d-44c8-a62c-18b0c402b886,Jitendra Kadiyala,+918523084065,exact_phone,found
-Harikaputta,7337212445,d983edf9-d14f-4342-9c6e-f24e7f6750ed,Hari,+919398290881,partial_name,found
+Harikaputta,7337212445,64b0f5d7-0daa-45f4-a237-e3d3ffd59c7f,Harika_putta,+917337212445,exact_phone,found
 Ch. Sofia,9849316991,7b907c03-2fab-432f-ac7e-1b07c5ef25f2,chsofia,+919849316991,exact_phone,found
 Papagari Laxmi Kanth Reddy,6302003875,749fa683-a2cd-4e69-bef7-e1259ebe32b0,Papagari Laxmi Kanth Reddy,+916302003875,exact_name,found
 VADLA VINAY KUMAR,7893883350,30e40dc0-809d-4551-97fa-37eec74d6002,VADLA VINAY KUMAR,+917893883350,exact_name,found
@@ -68,53 +68,53 @@ Bharath Linga Reddy Palem,9182154754,b0cb3154-c130-4ef4-ad63-61d087b83157,Bharat
 C vamshidhar reddy,8688323312,15ac8d43-c2c1-499d-9164-93effc2de704,c Vamshidhar Reddy,+918688323312,exact_name,found
 RAGHAVENDER REDDY PULAKANDLA,7671841671,c755abd8-121f-4201-83f0-425b90b848bf,RAGHAVENDER REDDY PULAKANDLA,+917671841671,exact_name,found
 Yamasani Venkat Chakradhar Reddy,8801327655,c73d1692-6f0b-4007-b777-eef34f04ef3a,Yamasani Venkat Chakradhar Reddy,+918801327655,exact_name,found
-Polavarapu CharanTeja,9059137378,782cc4cd-4cf7-4687-a93d-5c0fbfefaa4c,polavarapu,+919059137378,partial_name,found
+Polavarapu CharanTeja,9059137378,782cc4cd-4cf7-4687-a93d-5c0fbfefaa4c,polavarapu,+919059137378,exact_phone,found
 M.Subhash,6300674520,34b064cd-e9ca-4dbf-a767-ac92717282f5,M.subhash,+916300674520,exact_name,found
 Samala Sneha,7032128744,41257099-3aa5-4cb4-a4e9-30a182fe476d,samala sneha,+917032128744,exact_name,found
 K.Keerthi Sri,8143919928,51843cdd-1098-4b4a-8b8c-1c1f2216ce19,K.Keerthi Sri,+918143919928,exact_name,found
 Ch.Thanuja naga durga devi,8187824286,a3e358ce-5821-41e6-8c8b-d71ad8dc077e,Chintham Thanuja Naga Durga Devi,+918187824286,exact_phone,found
 CH.REVANTH,9908542420,1fecebe1-3de2-41a5-a307-9212e96c6d71,CH.REVANTH,+919908542420,exact_name,found
 Ranesh Rishi Vojja,8977930718,65ca10cc-6af3-4a66-b9d3-c09eb2f83a99,Ranesh Rishi Vojja,+918977930718,exact_name,found
-Todupunoori Shireesha,9676479637,997627a8-5dd4-4e83-aada-f14988acb545,Shireesha,+919392450854,partial_name,found
+Todupunoori Shireesha,9676479637,829eb1bf-27ae-442f-a3cc-8edbf3b81214,Shireesha Todupunoori,+919676479637,exact_phone,found
 YZ .Maahi Shayada Khanam,7993801434,93eb9a61-a439-4fe6-98c4-46d9c40147d3,YZ. Maahi Shayada Khanam,+917993801434,fuzzy_name,found
 Shaikh Arshia Tasneem,8374478754,ce71a0c2-ecc4-4958-94db-5a3069d2e0ac,Shaikh Arshia Tasneem,+918374478754,exact_name,found
 Annika,9148693907,2fa75dbd-7e24-4006-9ac6-5e1780e02886,Annika,+919148693907,exact_name,found
-K.Sharath Chandra,9032505513,d6f5ea19-7f1e-4d7f-af34-b4707b6c07cb,K.Sharath,+919032505513,partial_name,found
-Thammishetty Sai Rohtih,8179839626,b432052d-6791-4f45-8e4d-e523ed818694,sai,+919182439535,partial_name,found
+K.Sharath Chandra,9032505513,d6f5ea19-7f1e-4d7f-af34-b4707b6c07cb,K.Sharath,+919032505513,exact_phone,found
+Thammishetty Sai Rohtih,8179839626,9a6fe9a9-85f6-4de4-a514-7df300694463,T Sai Rohith,+918179839626,exact_phone,found
 Keerthika Ravalkol,7569471781,f875ebe8-0346-4bde-b9dd-5dbad57b1cb2,keerthikaravalkol,+917569471781,fuzzy_name,found
 YASA RISHWANTHREDDY,9347602314,3a9b0147-3b4f-48a1-84cd-128dcc1dd939,YASA RISHWANTH REDDY,+919347602314,fuzzy_name,found
-Nihal Shariff,7893731429,d983edf9-d14f-4342-9c6e-f24e7f6750ed,Hari,+919398290881,partial_name,found
+Nihal Shariff,7893731429,,,,,not_found
 Om Srinija Udayagiri,9000221665,5d24800d-5eda-4255-aa08-aa9b19ece914,om srinija udayagiri,+919000221665,exact_name,found
 Deekshith Mamidi,8500212735,101ed5ae-72d7-439e-93dd-0be09eeae376,Deekshith Mamidi,+918500212735,exact_name,found
 Annadata Hemanth,9392539624,d693a27c-153e-46c6-b272-3637e4cb8ef3,Annadata Hemanth,+919392539624,exact_name,found
 D.Sanjay Reddy,6281819435,1f6d563c-d06e-424e-a71b-00a8b7256308,D.Sanjay Reddy,+916281819435,exact_name,found
 Samasungu vyshnavi,9063953493,69f26531-6488-43a5-a5af-d5365e56ce1f,samasungu vyshnavi,+919063953496,exact_name,found
 Polamonilikitha,7569694324,107488d8-23b0-4e1c-9337-86c2f6048735,Polamoni Likitha,+917569694324,exact_name,found
-no,7993847638,ded5f89f-c8ff-4ba2-ba8d-5a55d6009339,MANOJ SEEMALA,+919666079694,partial_name,found
-SHIVUNAPURAM SATHVIK REDDY,7794840664,2588f4aa-9079-4a15-8e69-1d2348c0d8e8,Shiv,+919900065694,partial_name,found
+no,7993847638,ae4bf994-80b8-4180-9012-cb3db4a22f0a,Y.Sai Ankitha Reddy,+917993847638,exact_phone,found
+SHIVUNAPURAM SATHVIK REDDY,7794840664,85d612c2-e9fd-4583-a372-64ee4c88db63,Sathvik Reddy,+917794840664,exact_phone,found
 B.Harinagasreeram,8555836798,630efdbf-19f9-4f37-a714-9da9d87c02ce,B.Harinagasreeram,+918555836798,exact_name,found
-Aditya Tarun Jandhyala,8106565763,8a50216c-5a06-4165-a27e-37ebfafd1572,Aditya Tarun J,+918106565763,partial_name,found
-dasari chandra harsha,6304933578,70bb6849-321a-4c10-b157-582d5425b118,chandra harsha,+916304933578,partial_name,found
-Kanchi Sanjana Sree,8247255366,271bf7c2-395b-476e-a5bf-f3b3b3a4ff7b,Anjana,+919014587119,partial_name,found
+Aditya Tarun Jandhyala,8106565763,8a50216c-5a06-4165-a27e-37ebfafd1572,Aditya Tarun J,+918106565763,exact_phone,found
+dasari chandra harsha,6304933578,70bb6849-321a-4c10-b157-582d5425b118,chandra harsha,+916304933578,exact_phone,found
+Kanchi Sanjana Sree,8247255366,db92b1ba-76aa-4e01-aeca-d44857cb481f,Sanjana Sree Kanchi,+918247255366,exact_phone,found
 Shaik Sabia Zaheen,7893073809,363ce89b-1f4a-4c41-a1d3-7f043af5b1cf,Shaik Sabia Zaheen,+917893073809,exact_name,found
 D.varshini,9703432373,,,,,not_found
 Jakkula Sagarika,8328294027,e14bdad1-1883-482f-bd3d-eb78d3f2203d,Jakkula Sagarika,+918328294027,exact_name,found
-Sai Charan V,8074057617,b432052d-6791-4f45-8e4d-e523ed818694,sai,+919182439535,partial_name,found
+Sai Charan V,8074057617,ad9e8513-7d62-45b4-a946-08c06719da60,Sai Charan,+918074057617,exact_phone,found
 R.Ghyana Siva raju,6304239109,7ede37f0-8672-457e-b87a-79dcbf275ddc,R.Ghyana Siva raju,+916304239109,exact_name,found
-no,7075520977,ded5f89f-c8ff-4ba2-ba8d-5a55d6009339,MANOJ SEEMALA,+919666079694,partial_name,found
+no,7075520977,,,,,not_found
 Harshavardhan Reddy,7981326315,265c152f-eb59-4e3b-867a-beb2eccf4d1d,Harshavardhan Reddy,+917981326315,exact_name,found
 K. Navya Sri,8500616829,b05bf7f0-d08f-4a08-b75e-8d246f897e37,K. Navya Sri,+918500616829,exact_name,found
 Y. Venkateswar Rao,9949844699,6834be91-82d8-4955-9125-c747c4d3c0df,Y. Venkateswar Rao,+919949844699,exact_name,found
-K Harishwar,9640094245,d983edf9-d14f-4342-9c6e-f24e7f6750ed,Hari,+919398290881,partial_name,found
+K Harishwar,9640094245,46f40351-87f6-4fdd-8d6f-aee64e949a13,Harishwar K,+919640094245,exact_phone,found
 Irinki Leela Dattatreya,8125747350,471842a6-609f-4046-b716-583fc387c327,Irinki Leela Dattatreya,+918125747350,exact_name,found
 Marru Shishrutha,8328624968,247ad762-88e0-424b-a505-091ba8d521bf,Marru Shishrutha,+918328624968,exact_name,found
 Kesuboina naga pranathi,9603792006,bfcc3b8c-8d12-44dd-b992-0347ec6825de,kesuboina Naga Pranathi,+919603792006,exact_name,found
 Machanagari Thirupathi reddy,9502916375,05a742be-c810-44b5-918b-2e73ff683a6f,Thirupathireddy,+919502916375,exact_phone,found
 Miduthuru.Srujit Kumar Reddy,9493024667,4ba614dc-4d8e-4958-bf3a-9d0d63b32626,Miduthuru Srujit Kumar Reddy,+919493024667,exact_phone,found
 P keerthi,7981795233,cc7a594d-8c45-422f-a586-0ca90fd35c55,pkeerthi,+917981795233,fuzzy_name,found
-Sadhvika Nallathigala,9493261177,baddddec-657c-423b-b643-c362e01e9c40,sadhvika,+919493261177,partial_name,found
+Sadhvika Nallathigala,9493261177,baddddec-657c-423b-b643-c362e01e9c40,sadhvika,+919493261177,exact_phone,found
 Gadhey harsha sri,9347149892,e14c84f0-4099-43f0-9bf6-8d48c0b74a30,Gadhey harsha sri,+919347149892,exact_name,found
-P vinitha,9652652389,9a904092-275a-48e8-b631-7486b0f94668,vinitha,+919652652389,partial_name,found
+P vinitha,9652652389,9a904092-275a-48e8-b631-7486b0f94668,vinitha,+919652652389,exact_phone,found
 Chandavena Nikitha,8522952603,ae6d9630-b01f-4a4f-9e68-2710f6a17298,Chandavena Nikitha,+918522952603,exact_name,found
 K.Bhagya sri,8688181442,5b7f3436-6c32-4cc1-8367-e5cf8613fc6d,kantamani bhagya sri,+918688181442,exact_phone,found
 Kannikanti Lahari,7416097933,017593d2-5ec1-4bad-930d-968fdfa6b78f,kannikanti Lahari,+917416097933,exact_name,found
@@ -125,16 +125,16 @@ Duggineni Upendar,8639755542,8962bb4a-f39d-41e2-b17b-e77640e2dbb7,Duggineni Upen
 P. Sindhu Reddy,7671065353,d7dec569-8805-4ee6-bc4b-9f5911246cf2,P.Sindhu Reddy,+917671065353,fuzzy_name,found
 S.vinay kumar,9391242068,bc4e7079-126b-46fc-b558-c3addc91b1f2,S.vinay kumar,+919391243068,exact_name,found
 Gujjari Abhilash,6304563042,c0ca12ea-6ac4-4a8b-bcc0-1598b0e7184a,Gujjari Abhilash,+916304563042,exact_name,found
-B.Shireesha,9392450854,997627a8-5dd4-4e83-aada-f14988acb545,Shireesha,+919392450854,partial_name,found
+B.Shireesha,9392450854,997627a8-5dd4-4e83-aada-f14988acb545,Shireesha,+919392450854,exact_phone,found
 PULLAGURA CHARANMAYEE,8639233958,93aee7d4-c7f2-47a4-99cb-3342d48b1ed2,pullagura charanmayee,+918639233958,exact_name,found
 Piyush Singh,7393044994,8e5a160c-3235-4144-99f8-a61f2264c120,Piyush Singh,+917393044994,exact_name,found
-Aiynada Komali Kiran,7386501917,6b7ad66c-0ac7-4cc4-bec3-a97b50c393ca,KOMALI KIRAN,+917386501917,partial_name,found
+Aiynada Komali Kiran,7386501917,6b7ad66c-0ac7-4cc4-bec3-a97b50c393ca,KOMALI KIRAN,+917386501917,exact_phone,found
 Kavya Garlapati,9059138002,94d7ee48-858a-4491-993d-bdcbed6eecb9,Kavya Garlapati,+919059138002,exact_name,found
 Krishna Mishra,9391615864,ba2b483f-5c4b-473a-8abb-bf71eb299196,Krishna Mishra,+919391615864,exact_name,found
 KARTHIK GARLAPATI,8978330509,61ef5e27-b501-4614-9b64-31adbe8c4872,KARTHIK GARLAPATI,+918978330509,exact_name,found
 J.Anusha,6305682510,93f68ed2-3638-4bf2-ba6f-f80262a876c9,J.Anusha,+916305682510,exact_name,found
 Kolluri Tejaswini,7036022295,0a812133-e13f-4e30-a286-bebb8cd5a161,Kolluri Tejaswini,+917036022295,exact_name,found
-yes,8639290325,10e99d5b-dafd-4481-b857-b1e116f95883,Shaik Yeswanth,+919063585503,partial_name,found
+yes,8639290325,11c93473-2711-4290-90f3-3f67dadcb542,Revanthbellam,+918639290325,exact_phone,found
 Bommidi Srikar Reddy,9912274736,8c37ac8a-0dba-4721-be5b-bf1b88603d58,Bommidi Srikar Reddy,+919912274736,exact_name,found
 chennawar Nagaraj,8019152004,14f1b1cd-5797-42db-8717-18f2caa2ce7c,chennawar Nagaraj,+918019152004,exact_name,found
 Varahala vikas,8019075830,b00b342b-0416-40c6-8bcb-390f9a7ffa93,VARAHALA VIKAS,+918019075830,exact_name,found
@@ -143,41 +143,41 @@ sai sashindra kagithapu,8125821266,7adf19c6-d771-42fd-80ef-e159dc7b77f6,Sai Sash
 Ghauravh Arulpragasam,7708337058,5f47e3ae-f5e7-4a92-a7c3-1480e740eb06,Ghauravh Arulpragasam,+917708337058,exact_name,found
 Sheethal Peddoju,7993808416,,,,,not_found
 Kolla Jyoshika,9010621001,541b3d08-0412-4499-a6a6-4fa4e4cb6cc7,Kolla Jyoshika,+919010621001,exact_name,found
-Guntupalli Krishna Sai,7337574171,b432052d-6791-4f45-8e4d-e523ed818694,sai,+919182439535,partial_name,found
+Guntupalli Krishna Sai,7337574171,103fafd8-95d9-4678-8d28-a54638d601f8,Krishna Sai,+917337574171,exact_phone,found
 Karnati.Bhuvaneswar Reddy,7981369040,f0b75112-99ac-44be-9410-d964ed7205ad,Karnati.Bhuvaneswar Reddy,+917981369040,exact_name,found
-Kodi Renusri,9014359864,b744339d-8dd7-4697-b039-37d46624c43f,Kodi,+916301557386,partial_name,found
+Kodi Renusri,9014359864,239f2501-ec5e-4fb9-9063-f928cc3c55bb,Renu sri,+919014359864,exact_phone,found
 Ayyagari Srinidhi Reddy,9032024774,8d15da81-a5ec-4398-8c41-910e8852c0e9,Ayyagari Srinidhi Reddy,+919032024774,exact_name,found
 Kundala Chandana,9398896385,b6f8732b-974a-4e2f-9fb6-77bb67bf8702,K.Chandana,+919398896385,exact_phone,found
 Yandrapalli Naga Sreenadhan Reddy,6302978273,b11759d1-7938-4be8-a767-0812d7702bc1,Yandrapalli Naga Sreenadhan Reddy,+916302978273,exact_name,found
-Gorla Bindu Sree,7675961252,b88de666-d6ec-4af6-a61e-c3570e098d5f,Bindu Sree,+917675961252,partial_name,found
-C. Shreyas Reddy,9346759117,55b82df8-f64f-446e-97ed-df319b0eabdf,Shreyas Reddy,+919346759117,partial_name,found
+Gorla Bindu Sree,7675961252,b88de666-d6ec-4af6-a61e-c3570e098d5f,Bindu Sree,+917675961252,exact_phone,found
+C. Shreyas Reddy,9346759117,55b82df8-f64f-446e-97ed-df319b0eabdf,Shreyas Reddy,+919346759117,exact_phone,found
 Dinesh addala,8688995239,0463ef7a-0b3c-41b8-9ee5-2716b435bc79,Dinesh addala,+918688995239,exact_name,found
 Gyanaji Niranjan Reddy,9100857417,61dad8d9-17f5-4f49-aacb-bac84af76735,G Niranjan Reddy,+919100857417,exact_phone,found
-Shreena Sherlyn Errolla,9391204079,4e1779ae-05a2-498c-831f-806fd2823d5d,Shreena Sherlyn,+919391204079,partial_name,found
+Shreena Sherlyn Errolla,9391204079,4e1779ae-05a2-498c-831f-806fd2823d5d,Shreena Sherlyn,+919391204079,exact_phone,found
 V Jayanth Kumar,7075549901,b06dc26b-b125-484f-958c-66fa1d2d105a,V Jayanth Kumar,+917075549901,exact_name,found
 NANDITA NISHANTH,81292 98107,60c419fc-b13d-44c7-bf20-fdf2f7172ff2,Nandita Nishanth,+918129298107,exact_name,found
-Vaddi srivishnu,9392925045,89b66d6e-a4ca-40b5-bf74-4f52c010101d,Vishnu,+916304807196,partial_name,found
+Vaddi srivishnu,9392925045,,,,,not_found
 Y.Sai Kiran Reddy,8074400859,d1230808-eacd-4afc-937c-071031f9187c,y.sai kiran reddy,+918074400859,exact_name,found
 Bhanuri Suchitra,7995974532,d823847a-6fcc-4100-a998-d630ea49d4a4,Bhanuri Suchitra,+917995974532,exact_name,found
 Gudapu Charan Reddy,9390007683,68dfe8d2-f8b9-49fa-a1ce-d0be24acaa5d,G Charan Reddy,+919390007683,exact_phone,found
 Pranav Jaina,9676511195,b603b066-f496-46bf-a159-a8e0e501048e,Pranav Jaina,+919676511195,exact_name,found
 Nitin Sain,7569350127,4d6932f9-b19a-4121-919d-e04ca4db5748,Nitin Sain,+917569350127,exact_name,found
-Sami Reddy Harshith Reddy,6304768651,f644415f-97f6-43b4-b847-6d2ef173c24b,sam,9949762266,partial_name,found
-Mangali Sai Kiran,6302370478,b432052d-6791-4f45-8e4d-e523ed818694,sai,+919182439535,partial_name,found
-M Anirudh,9553331806,07869961-3b42-4e1a-b3d4-dd859f8bd351,anir,9849934333,partial_name,found
+Sami Reddy Harshith Reddy,6304768651,,,,,not_found
+Mangali Sai Kiran,6302370478,b474031a-f0be-43e0-b1f8-6a3736b9e76b,M Sai Kiran,+916302370478,exact_phone,found
+M Anirudh,9553331806,,,,,not_found
 Guduri Abhishek,7093325445,2a2aa86d-6087-4bc2-aa17-2c67ddbe2236,Guduri Abhishek,+917093325445,exact_name,found
 RACHAMALLA HIMAVANTHA REDDY,7569396354,9ac09c29-9744-4a0e-91d6-b62cbb99aa89,R.HIMAVANTHA REDDY,+917569396354,exact_phone,found
 Naguboyina Dheeraj Chowdary,8790293355,470279dc-3508-49b3-9923-3a0adde34991,Naguboyina Dheeraj Chowdary,+918790293355,exact_name,found
-Amancharla Harinath Reddy,8790233919,d983edf9-d14f-4342-9c6e-f24e7f6750ed,Hari,+919398290881,partial_name,found
-Badodhe Khushal Prasad,9959109048,dfab884f-a9a8-45a3-a057-68ff06f4c879,Prasad,+919640240841,partial_name,found
+Amancharla Harinath Reddy,8790233919,661d09ee-1095-4c37-ba7f-6386f0dda7d7,Anancharla Harinath Reddy,+918790233919,exact_phone,found
+Badodhe Khushal Prasad,9959109048,fc4a641d-c0b5-40ba-a8ba-25479d79c890,B khushal prasad,+919959109048,exact_phone,found
 Narne.Kavya Sree,9493547780,17b6f18d-6878-42cb-b245-8ee5c2f122ef,Narne.Kavya Sree,+919493547780,exact_name,found
 Doma Prakrithi Reddy,8341440777,3492d549-ab60-4ab8-89b0-1913958895e0,Doma Prakrithi Reddy,+918341440777,exact_name,found
 Pittam Bindu,9391404145,96f7d522-36be-41f1-a51a-2e12bbaa05d8,Pittam Bindu,+919391404145,exact_name,found
 Mahesh Chowdary,9573409069,f8f8aa83-5ab7-42cf-84b2-a377c98ec93c,Mahesh Chowdary,+919573409069,exact_name,found
-Patel Shiva Prasad ,9063452448,2588f4aa-9079-4a15-8e69-1d2348c0d8e8,Shiv,+919900065694,partial_name,found
-G.Vaishnavi,8522035915,2b8a57f5-f9a7-4c6f-ae4c-42f04a12730e,Vaishnavi,+919502662975,partial_name,found
+Patel Shiva Prasad ,9063452448,c9c342c7-cba4-4b14-8b56-19fc7a6477d4,P.shiva prasad reddy,+919063452448,exact_phone,found
+G.Vaishnavi,8522035915,ac3d742c-f233-448b-b65d-c1ba49bed6b8,Gilla Vaishnavi,+918522035915,exact_phone,found
 NAGIREDDY YASHWANTH REDDY,8688481061,218678ff-acdc-471f-bec7-e4071ee051e0,Nagireddy Yashwanth Reddy,+918688481061,exact_name,found
-Mithana Yuva Kishore,9985687899,994253dc-e419-4266-ade4-806e595c44c4,Yuva Kishore,+919985687899,partial_name,found
+Mithana Yuva Kishore,9985687899,994253dc-e419-4266-ade4-806e595c44c4,Yuva Kishore,+919985687899,exact_phone,found
 V Babu,7670987150,,,,,not_found
 Salla Charitesh Reddy,9949663536,9a218807-ef08-47a3-b3cf-0804407d06d4,Salla Charitesh Reddy,+919949663536,exact_name,found
 Putta Rishitha,9392844515,07c9da13-d98c-4035-a4c5-fae7b760aaf7,putta rishitha,+919392844515,exact_name,found
@@ -185,9 +185,9 @@ Gode Aakaash,9110752097,07c481c7-abe5-471a-8332-d00769763b07,Gode Aakaash,+91911
 Vadlamani Srivalli,9160531668,98744be1-f8bd-47b5-a326-63c8a4238eae,vadlamani Srivalli,+919160531668,exact_name,found
 BEERLA TEJARANI,6300239449,,,,,not_found
 sahithy k,8500595353,94616584-2695-4b28-8ca3-73d03f661776,sahithy K,+918500595353,exact_name,found
-Mohan Krishna Reddy Uppathi,7671062848,1c218c95-59e5-4296-9e68-0c737a27f09e,Mohan Krishna Reddy,+917671062848,partial_name,found
-G Akshay Karthik,9440639911,49f327d6-5ebd-4333-b196-5a018f141766,Akshay Karthik,+919440639911,partial_name,found
-kotla sai keerthana,8106175328,b432052d-6791-4f45-8e4d-e523ed818694,sai,+919182439535,partial_name,found
+Mohan Krishna Reddy Uppathi,7671062848,1c218c95-59e5-4296-9e68-0c737a27f09e,Mohan Krishna Reddy,+917671062848,exact_phone,found
+G Akshay Karthik,9440639911,49f327d6-5ebd-4333-b196-5a018f141766,Akshay Karthik,+919440639911,exact_phone,found
+kotla sai keerthana,8106175328,d680de46-822c-4166-88e7-ec8430e9797b,k .sai keerthana,+918106175328,exact_phone,found
 Munipalle Srichakra Kanwa,8919521138,20f6e2c9-fd99-4624-95f6-519264247b22,Munipalli Srichakra Kanwa,+918919521138,exact_phone,found
 P.Rishi Babu,9392841699,d501dee9-bc99-413b-8652-689e68d18b38,P Rishi Babu,+919392841699,exact_phone,found
 Boya Thirumala,7815908688,5c4dabda-198c-4175-9648-d9fc471cc1e3,Boyathirumala,+917815908688,fuzzy_name,found
@@ -195,16 +195,16 @@ K Yashwanth reddy,8374283935,,,,,not_found
 Aniketh Peddi,8688562507,0304f6cc-fbde-4b52-a6f0-e3593ca81430,Aniketh Peddi,+918688562507,exact_name,found
 Nayana Chowdary Vadlamudi,8096797288,20f8805d-6cb8-408f-ae12-9d7c70701e44,Nayana Chowdary Vadlamudi,+918096797288,exact_name,found
 putta rishitha,9392844515,07c9da13-d98c-4035-a4c5-fae7b760aaf7,putta rishitha,+919392844515,exact_name,found
-MANGALARAM MANOJ,6300973626,65e2e1ab-0afc-4e96-a519-20f8f7dbf305,manoj,+917286038456,partial_name,found
+MANGALARAM MANOJ,6300973626,25243b9c-9614-4bdf-b102-815a038be34a,Manoj Mangalaram,+916300973626,exact_phone,found
 Ramireddy Nitheesha,7842816420,40713b22-b12b-4f65-982b-12f92c93c6f4,Ramireddy Nitheesha,+917842816420,exact_name,found
-yes,9347376599,10e99d5b-dafd-4481-b857-b1e116f95883,Shaik Yeswanth,+919063585503,partial_name,found
+yes,9347376599,2714abf7-9dac-48c5-b25e-245d18fdb8c0,Sreenitha Chowdary,+919347376599,exact_phone,found
 THAMMINA PRAVALLIKA,9515726346,9cbca72e-40e9-4e23-b4d4-b3300182fc25,THAMMINA PRAVALLIKA,+919515726346,exact_name,found
 KETHAVATH SUBHASH,7013798896,e85e5811-8e22-4e49-9a0a-a109031f27df,KETHAVATH SUBHASH,+917013798896,exact_name,found
-Malgani Sridhar Goud,9959628457,0d1b8956-14cf-4067-91b6-d19090a42e5e,Sridhar Goud,+919959628457,partial_name,found
-Yara akshay kumar,8520850813,dc9262ae-dfcb-4cf3-8cc0-b89f5dd76732,Akshay kumar,+918520850813,partial_name,found
-Madhavabhotla Harshith,8008919845,4084a5b0-4292-4968-8f4a-3059a898b97e,Madhava,+917981428675,partial_name,found
+Malgani Sridhar Goud,9959628457,0d1b8956-14cf-4067-91b6-d19090a42e5e,Sridhar Goud,+919959628457,exact_phone,found
+Yara akshay kumar,8520850813,dc9262ae-dfcb-4cf3-8cc0-b89f5dd76732,Akshay kumar,+918520850813,exact_phone,found
+Madhavabhotla Harshith,8008919845,6bdef7fd-bd36-4c3d-b7cf-e8071471cb97,Harshith Madhavabhotla,+918008919845,exact_phone,found
 Bhushan Kharkar,9703976503,b7b9562b-4df2-4c65-8d90-57cdff723134,Bhushan Kharkar,+919703976503,exact_name,found
-Potukuchi phani sasidhar,8179317579,e60a28a9-c944-4331-a580-c2c8a13d08b9,phani,+919908669999,partial_name,found
+Potukuchi phani sasidhar,8179317579,76f0dc9a-80cc-4453-ba64-574e455d36d0,phanisasidhar,+918179317579,exact_phone,found
 Saladi Vanshika,9398883560,e8936b96-ebfa-424c-b44d-23e158c3038e,Saladi Vanshika,+919398883560,exact_name,found
 Varun Tej Kallaganti,9154687447,,,,,not_found
 Sirisani Shiva kiran reddy,7815908703,32785bb7-2d6b-4fd4-bac4-fa6ea19f6155,sirisani Shiva Kiran Reddy,+917815908703,exact_name,found

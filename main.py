@@ -411,8 +411,8 @@ def main():
 
     # Configuration - UPDATE THESE VALUES
     TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTIwNDAxODksInN1YiI6IjJiY2MxOGE3LTAzYTQtNDBlYS1hZTliLTIyMzYwN2YyMzlkZiJ9.SZd-7BXKhSr1T6_-4zpilkQzmhflQML1XbvS_AAML8E"
-    INPUT_CSV = "data/Bits-Pilani.csv"
-    OUTPUT_CSV = "data/output_with_uids_BITS.csv"
+    INPUT_CSV = "data/ICFAI.csv"
+    OUTPUT_CSV = "data/output_with_uids_ICFAI.csv"
     NAME_COLUMN = "FirstName"
     PHONE_COLUMN = "Phone Number"
 
