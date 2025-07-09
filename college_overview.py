@@ -234,7 +234,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
                     "original_phone": raw_phone
                 }
 
-    # Build mapping with improved phone matching
+    
     college_contributors = []
     matched_count = 0
     unmatched_count = 0
