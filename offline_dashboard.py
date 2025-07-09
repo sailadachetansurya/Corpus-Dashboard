@@ -16,7 +16,7 @@ print("Files in directory:", os.listdir('.'))
 
 # Set page configuration
 try:
-    bits_data = pd.read_csv('data/user_summary_report_BITS.csv')
+    bits_data = pd.read_csv('user_summary_report_BITS.csv')
     print("BITS data shape:", bits_data.shape)
     print("BITS columns:", bits_data.columns.tolist())
 except Exception as e:
@@ -73,8 +73,8 @@ st.markdown("""
 @st.cache_data
 def load_data():
     # Read CSV files from the 'data' folder
-    bits_data = pd.read_csv('data/user_summary_report_BITS.csv')
-    icfai_data = pd.read_csv('data/user_summary_report_ICFAI.csv')
+    bits_data = pd.read_csv('user_summary_report_BITS.csv')
+    icfai_data = pd.read_csv('user_summary_report_ICFAI.csv')
     
     # Clean the data
     bits_data = bits_data.dropna(subset=['name'])
@@ -83,8 +83,6 @@ def load_data():
     # Add institution column
     bits_data['institution'] = 'BITS'
     icfai_data['institution'] = 'ICFAI'
-    
-    return bits_data, icfai_data
     
     # Add calculated fields for better analysis
     for df in [bits_data, icfai_data]:
@@ -340,7 +338,7 @@ def main():
         st.write(f"• Multimedia Ratio: {multimedia_ratio_range[0]:.1f} - {multimedia_ratio_range[1]:.1f}")
         
         if st.button("🔄 Reset All Filters"):
-            st.experimental_rerun()
+            st.rerun()
     
     # Check if we have filtered data
     if len(filtered_data) == 0:
@@ -643,7 +641,7 @@ def main():
         st.dataframe(leaderboard, use_container_width=True)
     
     with tab6:
-        st.markdown('<h2 class="section-header">📋 Data Table</h2>', unsafe_use_html=True)
+        st.markdown('<h2 class="section-header">📋 Data Table</h2>', unsafe_allow_html=True)
         
         # Search and filter functionality
         search_term = st.text_input("Search users by name:", "")
@@ -680,10 +678,36 @@ def main():
     st.markdown("---")
     st.markdown("""
     <div style="text-align: center; color: #666; font-size: 0.9em;">
-    Enhanced Dashboard created with ❤️ using Streamlit | Advanced Features & Comprehensive Filtering<br>
-    This dashboard provides comprehensive analysis of user activity and content preferences across institutions.
+    Enhanced Dashboard v2.0 | Data Analysis Tool for User Summary Reports<br>
+    📊 Analyzing user activity patterns across BITS and ICFAI institutions<br>
+    🔍 Advanced filtering and analytics capabilities<br>
+    📈 Real-time statistics and interactive visualizations<br>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Additional insights in expander
+    with st.expander("📊 Data Insights & Recommendations"):
+        st.markdown("""
+        ### Key Insights:
+        - **User Engagement**: Monitor active vs inactive users to improve engagement strategies
+        - **Content Preferences**: Understand which content types drive user activity
+        - **Institution Comparison**: Compare performance metrics between institutions
+        - **Multimedia Impact**: Analyze how multimedia content affects user engagement
+        
+        ### Recommendations:
+        - Focus on increasing content diversity for better user engagement
+        - Encourage multimedia content creation for higher activity levels
+        - Implement targeted strategies for inactive users
+        - Monitor content preferences to optimize platform features
+        """)
+    
+    # Performance metrics
+    with st.expander("⚡ Performance Metrics"):
+        end_time = datetime.now()
+        st.write(f"Dashboard loaded successfully at {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        st.write(f"Total records processed: {len(combined_data):,}")
+        st.write(f"Active filters: {len([f for f in [institution_filter, activity_levels, content_preference_filter] if f != 'All Users' and f])}")
+        st.write(f"Data freshness: Real-time analysis")
 
 if __name__ == "__main__":
     main()
