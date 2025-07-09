@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import os
-import glob
+import os, glob
 import time
 import requests
 import logging
@@ -75,7 +74,7 @@ def fetch_user_contributions(user_id: str, token: str) -> Optional[Dict]:
     headers = {
         "Authorization": f"Bearer {token}", 
         "Accept": "application/json",
-        # "Content-Type": "application/json"
+        "Content-Type": "application/json"
     }
     
     try:
@@ -105,11 +104,8 @@ def fetch_user_contributions(user_id: str, token: str) -> Optional[Dict]:
         if e.response.status_code == 404:
             st.warning(f"No contributions found for user {user_id}")
             return {"total_contributions": 0}
-        elif e.response.status_code == 500:
-            st.warning("⚠️ Server error - using fallback method")
-            return None
         else:
-            st.error(f"❌ API Error: {e.response.status_code}")
+            st.error(f"❌ Failed to fetch contributions: HTTP {e.response.status_code}")
             return None
     except Exception as e:
         progress_bar.empty()
@@ -126,7 +122,7 @@ def safe_fetch_user_contributions(user_id, token, max_retries=3):
         try:
             # Add a small delay between requests to avoid overwhelming the server
             if attempt > 0:
-                time.sleep(0.2)
+                time.sleep(0.5)
             
             user_data = fetch_user_contributions_silent(user_id, token)
             
@@ -238,7 +234,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
                     "original_phone": raw_phone
                 }
 
-    
+    # Build mapping with improved phone matching
     college_contributors = []
     matched_count = 0
     unmatched_count = 0
@@ -384,7 +380,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
 
     # Show summary statistics
     st.markdown("### 📈 Contribution Summary")
-    registered_users_count = len(df[df['registered']])
+    registered_users_count = len(df[df['registered'] == True])
     users_with_contribs = len(df[df['contributions'] > 0])
     total_contributions = df['contributions'].sum()
     
@@ -408,7 +404,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
     
     with col1:
         # All registered users
-        registered_download_df = df[df["registered"]][["name", "college", "contributions", "phone", "cleaned_phone"]]
+        registered_download_df = df[df["registered"] == True][["name", "college", "contributions", "phone", "cleaned_phone"]]
         if len(registered_download_df) > 0:
             registered_csv = registered_download_df.to_csv(index=False)
             st.download_button(
@@ -423,7 +419,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
     
     with col2:
         # All unmatched users
-        unmatched_download_df = df[not df["registered"]][["name", "college", "phone", "cleaned_phone"]]
+        unmatched_download_df = df[df["registered"] == False][["name", "college", "phone", "cleaned_phone"]]
         if len(unmatched_download_df) > 0:
             unmatched_csv = unmatched_download_df.to_csv(index=False)
             st.download_button(
@@ -448,8 +444,8 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
                 college_df = df[df["college"] == college]
                 
                 # Statistics for this college
-                registered_count = len(college_df[college_df["registered"]])
-                unregistered_count = len(college_df[not college_df["registered"]])
+                registered_count = len(college_df[college_df["registered"] == True])
+                unregistered_count = len(college_df[college_df["registered"] == False])
                 total_contributions = college_df["contributions"].sum()
                 
                 col1, col2, col3 = st.columns(3)
@@ -465,7 +461,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
                 
                 with col1:
                     # Registered users for this college
-                    college_registered = college_df[college_df["registered"]][["name", "contributions", "phone", "cleaned_phone"]]
+                    college_registered = college_df[college_df["registered"] == True][["name", "contributions", "phone", "cleaned_phone"]]
                     if len(college_registered) > 0:
                         college_reg_csv = college_registered.to_csv(index=False)
                         st.download_button(
@@ -480,7 +476,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
                 
                 with col2:
                     # Unregistered users for this college
-                    college_unregistered = college_df[not college_df["registered"]][["name", "phone", "cleaned_phone"]]
+                    college_unregistered = college_df[college_df["registered"] == False][["name", "phone", "cleaned_phone"]]
                     if len(college_unregistered) > 0:
                         college_unreg_csv = college_unregistered.to_csv(index=False)
                         st.download_button(
@@ -504,7 +500,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
         
         col1, col2 = st.columns(2)
         with col1:
-            college_registered = college_df[college_df["registered"]][["name", "contributions", "phone", "cleaned_phone"]]
+            college_registered = college_df[college_df["registered"] == True][["name", "contributions", "phone", "cleaned_phone"]]
             if len(college_registered) > 0:
                 college_reg_csv = college_registered.to_csv(index=False)
                 st.download_button(
@@ -516,7 +512,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
                 )
         
         with col2:
-            college_unregistered = college_df[not college_df["registered"]][["name", "phone", "cleaned_phone"]]
+            college_unregistered = college_df[college_df["registered"] == False][["name", "phone", "cleaned_phone"]]
             if len(college_unregistered) > 0:
                 college_unreg_csv = college_unregistered.to_csv(index=False)
                 st.download_button(
@@ -530,7 +526,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
     # Only show charts if we have data
     if total_contributions > 0:
         # College summary (only registered users)
-        registered_df = df[df["registered"]]
+        registered_df = df[df["registered"] == True]
         college_summary = registered_df.groupby("college").agg({
             "contributions": ["sum", "count", "mean"]
         }).reset_index()
@@ -598,7 +594,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
     
     # Enhanced unregistered section
     st.markdown("### 🚫 Unregistered Students")
-    unregistered_df = df[not df["registered"]]
+    unregistered_df = df[df["registered"] == False]
     if len(unregistered_df) > 0:
         # Group by college for better organization
         for college in unregistered_df["college"].unique():
@@ -621,8 +617,8 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
         ],
         "Value": [
             len(df),
-            len(df[df["registered"]]),
-            len(df[not df["registered"]]),
+            len(df[df["registered"] == True]),
+            len(df[df["registered"] == False]),
             len(df[df["contributions"] > 0]),
             df["contributions"].sum(),
             round(df[df["contributions"] > 0]["contributions"].mean(), 2) if len(df[df["contributions"] > 0]) > 0 else 0
