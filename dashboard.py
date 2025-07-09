@@ -115,7 +115,7 @@ def load_auth_from_browser():
         )
         st.write(f"🔍 DEBUG: Retrieved user_id: {user_id}")
         
-        if user_id and user_id != "null" and user_id != None:
+        if user_id and user_id != "null" and user_id is not None:
             token = js(
                 js_expressions="localStorage.getItem('auth_token')", 
                 want_output=True, 
