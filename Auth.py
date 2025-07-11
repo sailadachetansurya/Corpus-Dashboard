@@ -9,7 +9,27 @@ import base64
 import json
 import hashlib
 
-from user import logout_user
+def logout_user():
+    """Properly cleanup session state and browser storage"""
+    # Clear browser storage
+    clear_auth_from_browser()
+    
+    # Clear session state
+    session_keys_to_clear = [
+        "authenticated", "username", "token", "user_id",
+        "query_results", "database_overview", "users_list",
+        "user_mapping", "export_triggered", "export_type", 
+        "export_format_selected", "browser_auth_checked"
+    ]
+    
+    for key in session_keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
+    
+    st.session_state.authenticated = False
+    st.session_state.browser_auth_checked = False  # Reset this flag
+    st.success("✅ Logged out successfully!")
+    st.rerun()
 
 
 def generate_session_token():
@@ -33,11 +53,6 @@ def save_auth_to_browser(user_id: str, token: str, username: str):
             want_output=True,
             key="test_localStorage_write"
         )
-        st.write(f"🔍 DEBUG: localStorage write test: {test_result}")
-        
-        if test_result != "success":
-            st.error(f"❌ localStorage not available: {test_result}")
-            return None
         
         # Save the actual data
         save_result = js(

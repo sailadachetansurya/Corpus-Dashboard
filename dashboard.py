@@ -1033,10 +1033,6 @@ def main():
     """Enhanced main application with all new features"""
     initialize_session_state()
         # Add this debug info to see what's happening
-    if st.sidebar.button("🔍 Debug Session"):
-        st.sidebar.write("Session State Keys:", list(st.session_state.keys()))
-        st.sidebar.write("Authenticated:", st.session_state.get("authenticated", False))
-        st.sidebar.write("Browser Auth Checked:", st.session_state.get("browser_auth_checked", False))
     
     if st.session_state.get("authenticated", False):
         if not validate_session_with_refresh():
