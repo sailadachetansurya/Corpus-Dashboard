@@ -58,6 +58,93 @@ def clean_phone_number(phone):
         return phone_clean
     return None
 
+def generate_summary_csv(records_csv_path, users_csv_path, output_csv_path):
+    """
+    Generate a summary CSV from records and users data.
+    
+    Parameters:
+    records_csv_path: path to records CSV
+    users_csv_path: path to users CSV (with registration info)
+    output_csv_path: path to save summary CSV
+    
+    Returns:
+    DataFrame: Summary data with Name, Registered, total contributions, and media type counts
+    """
+    # Load CSV files
+    df_records = pd.read_csv(records_csv_path)
+    df_users = pd.read_csv(users_csv_path)
+    
+    # Find the user ID column in users CSV
+    user_id_cols = ['user_id', 'uid', 'User ID', 'UserId', 'id']
+    user_id_col = None
+    for col in user_id_cols:
+        if col in df_users.columns:
+            user_id_col = col
+            break
+    
+    if user_id_col is None:
+        raise ValueError('User ID column not found in users CSV. Expected one of: ' + ', '.join(user_id_cols))
+    
+    # Normalize media_type column in records
+    df_records['media_type'] = df_records['media_type'].str.lower()
+    
+    # Group records by user_id and count contributions
+    user_contributions = df_records.groupby('user_id').agg({
+        'title': 'count',  # total contributions
+        'media_type': list
+    }).rename(columns={'title': 'total_contributions'})
+    
+    # Count each media type
+    def count_media_types(media_list):
+        counts = {'image': 0, 'video': 0, 'audio': 0, 'text': 0}
+        for media in media_list:
+            if media in counts:
+                counts[media] += 1
+        return pd.Series(counts)
+    
+    # Apply media type counting
+    media_counts = user_contributions['media_type'].apply(count_media_types)
+    
+    # Combine total contributions with media type counts
+    df_summary = pd.concat([user_contributions['total_contributions'], media_counts], axis=1)
+    df_summary = df_summary.reset_index()
+    
+    # Merge with users data to get Name and Registered status
+    df_users_clean = df_users.rename(columns={user_id_col: 'user_id'})
+    
+    # Ensure required columns exist in users data
+    required_cols = ['user_id', 'Name', 'Registered']
+    missing_cols = [col for col in required_cols if col not in df_users_clean.columns]
+    
+    if missing_cols:
+        print(f"Warning: Missing columns in users CSV: {missing_cols}")
+        # Add missing columns with default values
+        if 'Name' not in df_users_clean.columns:
+            df_users_clean['Name'] = ''
+        if 'Registered' not in df_users_clean.columns:
+            df_users_clean['Registered'] = 'N'
+    
+    # Merge summary with user details
+    df_final = df_summary.merge(
+        df_users_clean[['user_id', 'Name', 'Registered']], 
+        on='user_id', 
+        how='left'
+    )
+    
+    # Fill missing values
+    df_final['Registered'] = df_final['Registered'].fillna('N')
+    df_final['Name'] = df_final['Name'].fillna('')
+    df_final = df_final.fillna(0)  # Fill media type counts with 0
+    
+    # Reorder columns as requested
+    df_final = df_final[['Name', 'Registered', 'total_contributions', 'image', 'audio', 'text', 'video']]
+    
+    # Save summary CSV
+    df_final.to_csv(output_csv_path, index=False)
+    print(f"Summary CSV saved to {output_csv_path}")
+    return df_final
+
+
 def get_phone_from_row(row):
     """Extract phone number from row, handling multiple phone columns"""
     phone_columns = ["Phone Number", "Phone Number ", "phone", "Phone", "mobile", "Mobile", "contact", "Contact"]
@@ -70,6 +157,56 @@ def get_phone_from_row(row):
                 if cleaned:
                     return cleaned, str(phone).strip()
     return None, None
+
+def match_users_with_college_details(users_csv_path, clgdetails_csv_path, output_csv_path):
+    """
+    Match phone numbers from users CSV with college details CSV and append user details.
+    
+    Parameters:
+    users_csv_path: path to users CSV with phone numbers
+    clgdetails_csv_path: path to college details CSV
+    output_csv_path: path to save the matched CSV
+    
+    Returns:
+    DataFrame: The merged data with user and college details
+    """
+    # Load CSV files
+    df_users = pd.read_csv(users_csv_path)
+    df_clg = pd.read_csv(clgdetails_csv_path)
+    
+    # Function to clean and normalize phone numbers
+    def clean_phone(phone):
+        if pd.isna(phone):
+            return None
+        phone_str = str(phone)
+        # Remove country code, spaces, dashes, parentheses
+        phone_str = phone_str.replace('+91', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+        # Remove leading zeros
+        phone_str = phone_str.lstrip('0')
+        return phone_str if phone_str.isdigit() and len(phone_str) == 10 else None
+    
+    # Clean phone numbers in both dataframes
+    df_users['clean_phone'] = df_users['Phone Number'].apply(clean_phone)
+    df_clg['clean_phone'] = df_clg['Contact Number'].apply(clean_phone)
+    
+    # Merge dataframes on cleaned phone numbers
+    df_merged = pd.merge(
+        df_users, 
+        df_clg, 
+        how='left', 
+        left_on='clean_phone', 
+        right_on='clean_phone', 
+        suffixes=('_user', '_clg')
+    )
+    
+    # Drop the temporary clean_phone columns
+    df_merged = df_merged.drop(['clean_phone'], axis=1)
+    
+    # Save the merged data
+    df_merged.to_csv(output_csv_path, index=False)
+    print(f"Matched data saved to {output_csv_path}")
+    return df_merged
+
 
 def match_contributions_with_students(contributions_df, college_df):
     """Match contributions data with student data based on phone numbers"""
@@ -149,7 +286,7 @@ def display_college_overview(fetch_all_users, fetch_user_contributions_param, to
         return
     
     # Load contributions data from CSV
-    contributions_df = load_contributions_data("contributions_data.csv")
+    contributions_df = load_contributions_data("data/Records.csv")
     if contributions_df.empty:
         st.warning("⚠️ No contributions data found. Please ensure 'contributions_data.csv' exists with the required columns.")
         return
