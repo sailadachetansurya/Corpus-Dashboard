@@ -1,1040 +1,19 @@
 
 
 import streamlit as st
-from streamlit_js_eval import streamlit_js_eval as js
-import hashlib
-import secrets
+
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import requests
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from datetime import datetime
-import matplotlib.pyplot as plt
-import base64
 import json
-import logging
 import time
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
-
-def generate_session_token():
-    """Generate a secure session token"""
-    return secrets.token_urlsafe(32)
-
-def hash_token(token: str) -> str:
-    """Hash token for secure storage"""
-    return hashlib.sha256(token.encode()).hexdigest()
-
-def save_auth_to_browser(user_id: str, token: str, username: str):
-    """Save authentication data to browser localStorage with error handling"""
-    try:
-        session_token = generate_session_token()
-        
-        st.write("🔍 DEBUG: Attempting to save auth to browser...")
-        
-        # Test if we can write to localStorage first
-        test_result = js(
-            js_expressions="try { localStorage.setItem('test', 'test'); localStorage.removeItem('test'); return 'success'; } catch(e) { return 'failed: ' + e.message; }", 
-            want_output=True,
-            key="test_localStorage_write"
-        )
-        st.write(f"🔍 DEBUG: localStorage write test: {test_result}")
-        
-        if test_result != "success":
-            st.error(f"❌ localStorage not available: {test_result}")
-            return None
-        
-        # Save the actual data
-        save_result = js(
-            js_expressions=f"""
-                try {{
-                    localStorage.setItem('auth_user_id', '{user_id}');
-                    localStorage.setItem('auth_token', '{token}');
-                    localStorage.setItem('auth_username', '{username}');
-                    localStorage.setItem('auth_session_token', '{session_token}');
-                    localStorage.setItem('auth_timestamp', '{int(time.time())}');
-                    return 'saved_successfully';
-                }} catch(e) {{
-                    return 'save_failed: ' + e.message;
-                }}
-            """, 
-            want_output=True,
-            key="save_auth_data"
-        )
-        
-        st.write(f"🔍 DEBUG: Save result: {save_result}")
-        
-        if save_result == "saved_successfully":
-            st.success("✅ Auth data saved to browser storage!")
-            
-            # Verify the save worked
-            verification = js(
-                js_expressions="localStorage.getItem('auth_user_id')", 
-                want_output=True,
-                key="verify_save"
-            )
-            st.write(f"🔍 DEBUG: Verification - saved user_id: {verification}")
-            
-            return session_token
-        else:
-            st.error(f"❌ Failed to save auth data: {save_result}")
-            return None
-            
-    except Exception as e:
-        st.error(f"❌ Error in save_auth_to_browser: {e}")
-        return None
-
-
-
-def load_auth_from_browser():
-    """Load authentication data from browser localStorage with debugging"""
-    st.write("🔍 DEBUG: Attempting to load auth from browser...")
-    
-    try:
-        # Add a small delay to ensure DOM is ready
-        time.sleep(0.5)
-        
-        # Test if localStorage is accessible
-        test_result = js(
-            js_expressions="typeof(Storage) !== 'undefined' ? 'available' : 'not_available'", 
-            want_output=True, 
-            key="test_storage"
-        )
-        st.write(f"🔍 DEBUG: localStorage availability: {test_result}")
-        
-        user_id = js(
-            js_expressions="localStorage.getItem('auth_user_id')", 
-            want_output=True, 
-            key="get_user_id"
-        )
-        st.write(f"🔍 DEBUG: Retrieved user_id: {user_id}")
-        
-        if user_id and user_id != "null" and user_id != None:
-            token = js(
-                js_expressions="localStorage.getItem('auth_token')", 
-                want_output=True, 
-                key="get_token"
-            )
-            username = js(
-                js_expressions="localStorage.getItem('auth_username')", 
-                want_output=True, 
-                key="get_username"
-            )
-            timestamp = js(
-                js_expressions="localStorage.getItem('auth_timestamp')", 
-                want_output=True, 
-                key="get_timestamp"
-            )
-            
-            st.write(f"🔍 DEBUG: Retrieved values - token: {token is not None}, username: {username}, timestamp: {timestamp}")
-            
-            if all([token, username, timestamp]):
-                # Check if session is still valid (24 hours)
-                current_time = int(time.time())
-                stored_time = int(timestamp)
-                time_diff = current_time - stored_time
-                
-                st.write(f"🔍 DEBUG: Time difference: {time_diff} seconds")
-                
-                if time_diff < 86400:  # 24 hours
-                    st.write("✅ DEBUG: Valid session found in browser storage!")
-                    return {
-                        'user_id': user_id,
-                        'token': token,
-                        'username': username,
-                        'timestamp': timestamp
-                    }
-                else:
-                    st.write("❌ DEBUG: Session expired")
-            else:
-                st.write("❌ DEBUG: Missing required auth data")
-        else:
-            st.write("❌ DEBUG: No user_id found in localStorage")
-            
-    except Exception as e:
-        st.write(f"❌ DEBUG: Error loading auth from browser: {e}")
-    
-    st.write("❌ DEBUG: No valid session found in browser storage")
-    time.sleep(2500)
-    return None
-
-
-def clear_auth_from_browser():
-    """Clear authentication data from browser"""
-    js("""
-        localStorage.removeItem('auth_user_id');
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_username');
-        localStorage.removeItem('auth_session_token');
-        localStorage.removeItem('auth_timestamp');
-    """,
-    key="clear_auth"
-    )
-    
-
-# Enhanced page config
-st.set_page_config(
-    page_title="Advanced Corpus Records Dashboard",
-    page_icon="🚀",
-    layout="wide",
-    initial_sidebar_state="expanded",
-    menu_items={
-        "Get Help": "https://docs.streamlit.io",
-        "Report a bug": None,
-        "About": "Advanced Corpus Records Dashboard v2.0",
-    },
-)
-
-# Categories data
-CATEGORIES = {
-    "Fables": "379d6867-57c1-4f57-b6ee-fb734313e538",
-    "Events": "7a184c41-1a49-4beb-a01a-d8dc01693b15",
-    "Music": "94979e9f-4895-4cd7-8601-ad53d8099bf4",
-    "Places": "96e5104f-c786-4928-b932-f59f5b4ddbf0",
-    "Food": "833299f6-ff1c-4fde-804f-6d3b3877c76e",
-    "People": "af8b7a27-00b4-4192-9fa6-90152a0640b2",
-    "Literature": "74b133e7-e496-4e9d-85b0-3bd5eb4c3871",
-    "Architecture": "94a13c20-8a03-45da-8829-10e2fe1e61a1",
-    "Skills": "6f6f5023-a99e-4a29-a44a-6d5acbf88085",
-    "Images": "4366cab1-031e-4b37-816b-311ee34461a9",
-    "Culture": "ab9fa2ce-1f83-4e91-b89d-cca18e8b301e",
-    "Flora & Fauna": "5f40610f-ae47-4472-944c-cb899128ebbf",
-    "Education": "784ddb92-9540-4ce1-b4e4-6c1b7b18849d",
-    "Vegetation": "2f831ae2-f0cd-4142-8646-68dd195dfba2",
-    "Dance": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-}
-
-CATEGORY_ID_TO_NAME = {v: k for k, v in CATEGORIES.items()}
-
-
-# Initialize enhanced session state
-def initialize_session_state():
-    """Initialize comprehensive session state variables"""
-    session_vars = {
-        "authenticated": False,
-        "username": None,
-        "token": None,
-        "user_id": None,
-        "login_attempts": 0,
-        "selected_category": "Fables",
-        "query_user_id": "",
-        "query_results": None,
-        "last_queried_user": None,
-        "database_overview": None,
-        "dashboard_mode": "overview",
-        "date_filter": None,
-        "advanced_filters": {},
-        "comparison_data": {},
-        "real_time_updates": False,
-        "export_format": "csv",
-        "chart_theme": "dark",
-        "auto_refresh": False,
-        "notifications": [],
-        "users_list": None,
-        "user_mapping": {},
-        "selected_user_from_dropdown": None,
-        "user_preferences": {
-            "theme": "dark",
-            "chart_style": "modern",
-            "animation_speed": "normal",
-        },
-        "browser_auth_checked": False,
-    }
-
-    for var, default_value in session_vars.items():
-        if var not in st.session_state:
-            st.session_state[var] = default_value
-
-    # Check browser storage for existing authentication on first load
-    if not st.session_state.browser_auth_checked:
-        st.session_state.browser_auth_checked = True
-        
-        # Try to load authentication from browser
-        browser_auth = load_auth_from_browser()
-        if browser_auth:
-            # Validate the token is still valid
-            token_data = decode_jwt_token(browser_auth['token'])
-            if token_data and token_data.get('expires_at', 0) > time.time():
-                # Restore authentication state
-                st.session_state.authenticated = True
-                st.session_state.user_id = browser_auth['user_id']
-                st.session_state.token = browser_auth['token']
-                st.session_state.username = browser_auth['username']
-                st.success("✅ Session restored from browser storage!")
-            else:
-                # Token expired, clear browser storage
-                clear_auth_from_browser()
-
-
-# Authentication Functions
-def decode_jwt_token(token: str) -> Optional[Dict]:
-    """Enhanced JWT token decoder with better error handling"""
-    try:
-        parts = token.split(".")
-        if len(parts) != 3:
-            logger.error("Invalid JWT token format")
-            return None
-
-        payload = parts[1] + "=="
-        payload_decoded = json.loads(base64.b64decode(payload).decode("utf-8"))
-        user_id = payload_decoded.get("sub")
-
-        if not user_id:
-            logger.error("User ID not found in token")
-            return None
-
-        return {
-            "user_id": user_id,
-            "payload": payload_decoded,
-            "expires_at": payload_decoded.get("exp"),
-            "issued_at": payload_decoded.get("iat"),
-        }
-
-    except Exception as e:
-        logger.error(f"Failed to decode token: {e}")
-        return None
-
-def check_token_renewal():
-    """Check if token needs renewal and handle it"""
-    token = st.session_state.get("token")
-    if not token:
-        return
-    
-    token_data = decode_jwt_token(token)
-    if token_data:
-        expires_at = token_data.get("expires_at", 0)
-        current_time = time.time()
-        
-        # Renew if token expires in less than 5 minutes
-        if expires_at - current_time < 300:
-            st.warning("Session expiring soon. Please save your work.")
-
-def validate_session():
-    """Validate current session and token"""
-    if not st.session_state.get("authenticated", False):
-        return False
-    
-    token = st.session_state.get("token")
-    if not token:
-        logout_user()
-        return False
-    
-    # Validate token expiration
-    token_data = decode_jwt_token(token)
-    if not token_data:
-        logout_user()
-        return False
-    
-    expires_at = token_data.get("expires_at")
-    if expires_at and time.time() > expires_at:
-        st.error("Session expired. Please log in again.")
-        logout_user()
-        return False
-    
-    return True
-
-def validate_session_with_refresh():
-    """Validate session and refresh token if needed"""
-    if not st.session_state.get("authenticated", False):
-        return False
-    
-    token = st.session_state.get("token")
-    if not token:
-        logout_user()
-        return False
-    
-    # Validate token expiration
-    token_data = decode_jwt_token(token)
-    if not token_data:
-        logout_user()
-        return False
-    
-    expires_at = token_data.get("expires_at", 0)
-    current_time = time.time()
-    
-    # If token expires in less than 1 hour, try to refresh it
-    if expires_at - current_time < 3600:  # 1 hour
-        st.warning("🔄 Refreshing your session...")
-        # Here you could implement token refresh logic if your API supports it
-        
-    if expires_at <= current_time:
-        st.error("Session expired. Please log in again.")
-        logout_user()
-        return False
-    
-    return True
-
-
-def logout_user():
-    """Properly cleanup session state and browser storage"""
-    # Clear browser storage
-    clear_auth_from_browser()
-    
-    # Clear session state
-    session_keys_to_clear = [
-        "authenticated", "username", "token", "user_id",
-        "query_results", "database_overview", "users_list",
-        "user_mapping", "export_triggered", "export_type", 
-        "export_format_selected", "browser_auth_checked"
-    ]
-    
-    for key in session_keys_to_clear:
-        if key in st.session_state:
-            del st.session_state[key]
-    
-    st.session_state.authenticated = False
-    st.session_state.browser_auth_checked = False  # Reset this flag
-    st.success("✅ Logged out successfully!")
-    st.rerun()
-
-
-
-def login_user(phone: str, password: str) -> Optional[Dict]:
-    """Enhanced login with better UX"""
-    if not phone or not password:
-        st.error("Please enter both phone number and password")
-        return None
-
-    try:
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-
-        status_text.text("🔐 Authenticating credentials...")
-        progress_bar.progress(25)
-
-        response = requests.post(
-            "https://backend2.swecha.org/api/v1/auth/login",
-            json={"phone": phone, "password": password},
-            headers={"accept": "application/json", "Content-Type": "application/json"},
-            timeout=30,
-        )        
-
-        progress_bar.progress(75)
-        status_text.text("✅ Authentication successful!")
-        progress_bar.progress(100)
-        time.sleep(0.5)  # Brief pause for UX
-
-        progress_bar.empty()
-        status_text.empty()
-
-        response.raise_for_status()
-        login_result = response.json()
-
-        if login_result and "access_token" in login_result:
-            token_info = decode_jwt_token(login_result["access_token"])
-
-            if token_info:
-                # Set session state
-                st.session_state.authenticated = True
-                st.session_state.token = login_result["access_token"]
-                st.session_state.user_id = token_info["user_id"]
-                st.session_state.username = phone
-                st.session_state.login_attempts = 0
-
-                # Save to browser storage for persistence
-                save_auth_to_browser(
-                    token_info["user_id"], 
-                    login_result["access_token"], 
-                    phone
-                )
-
-                return login_result
-
-
-    except requests.exceptions.HTTPError as e:
-        progress_bar.empty()
-        status_text.empty()
-
-        if e.response.status_code == 401:
-            st.error("❌ Invalid phone number or password.")
-            st.session_state.login_attempts += 1
-            if st.session_state.login_attempts >= 3:
-                st.error(
-                    "🚫 Too many failed attempts. Please wait before trying again."
-                )
-        else:
-            st.error(f"❌ Login failed with status {e.response.status_code}")
-        return None
-
-    except Exception as e:
-        st.error(f"❌ Unexpected error: {e}")
-        return None
-
-
-def request_otp(phone: str) -> bool:
-    """Request OTP for login"""
-    try:
-        response = requests.post(
-            "https://backend2.swecha.org/api/v1/auth/send-otp",
-            json={"phone_number": phone},
-            headers={"accept": "application/json", "Content-Type": "application/json"},
-            timeout=30,
-        )
-        response.raise_for_status()
-        return True
-    except Exception as e:
-        st.error(f"❌ Failed to request OTP: {e}")
-        return False
-
-
-def verify_otp(phone: str, otp: str) -> Optional[Dict]:
-    """Verify OTP and get token"""
-    try:
-        response = requests.post(
-            "https://backend2.swecha.org/api/v1/auth/verify-otp",
-            json={"phone_number": phone, "otp_code": otp,"has_given_consent": True},
-            headers={"accept": "application/json", "Content-Type": "application/json"},
-            timeout=30,
-        )
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        st.error(f"❌ OTP verification failed: {e}")
-        return None
-
-
-# Enhanced Data Fetching Functions
-def fetch_records_with_cache(
-    user_id: str, token: str, use_cache: bool = True
-) -> List[Dict]:
-    """Fetch records with caching mechanism"""
-    cache_key = f"records_{user_id}"
-
-    if use_cache and cache_key in st.session_state:
-        cached_data = st.session_state[cache_key]
-        if time.time() - cached_data["timestamp"] < 300:  # 5 minutes cache
-            return cached_data["data"]
-
-    records = fetch_records(user_id, token)
-    if records:
-        st.session_state[cache_key] = {"data": records, "timestamp": time.time()}
-
-    return records
-
-
-def fetch_records(user_id: str, token: str) -> List[Dict]:
-    """Enhanced records fetching with better progress indication"""
-    if not user_id or not token:
-        st.error("User ID and token are required")
-        return []
-
-    url = f"https://backend2.swecha.org/api/v1/records/?user_id={user_id}&skip=0&limit=1000"
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-
-    try:
-        with st.spinner("🔄 Fetching your records..."):
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-            data = response.json()
-
-            if not isinstance(data, list):
-                logger.warning(f"Expected list, got {type(data)}")
-                st.warning("⚠️ Unexpected data format received from server")
-                return []
-
-            logger.info(f"Successfully fetched {len(data)} records")
-            return data
-
-    except requests.exceptions.Timeout:
-        st.error("⏱️ Request timed out. Please try again.")
-        return []
-    except requests.exceptions.ConnectionError:
-        st.error(
-            "🌐 Unable to connect to the server. Please check your internet connection."
-        )
-        return []
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 401:
-            st.error("🔐 Authentication failed. Please log in again.")
-            st.session_state.authenticated = False
-        else:
-            st.error(f"❌ Failed to fetch records: HTTP {e.response.status_code}")
-        return []
-    except Exception as e:
-        logger.error(f"Unexpected error fetching records: {e}")
-        st.error(f"❌ Unexpected error: {e}")
-        return []
-
-
-def fetch_any_user_records(query_user_id: str, token: str) -> List[Dict]:
-    """Enhanced user query with validation"""
-    if not query_user_id or not token:
-        st.error("User ID and token are required")
-        return []
-
-    if len(query_user_id.strip()) < 10:
-        st.error("Please enter a valid User ID")
-        return []
-
-    url = f"https://backend2.swecha.org/api/v1/records/?user_id={query_user_id.strip()}&skip=0&limit=1000"
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-
-    try:
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-
-        status_text.text(f"� Searching for user {query_user_id[:8]}...")
-        progress_bar.progress(30)
-
-        response = requests.get(url, headers=headers, timeout=30)
-        progress_bar.progress(70)
-        status_text.text("📊 Processing results...")
-
-        response.raise_for_status()
-        data = response.json()
-
-        progress_bar.progress(100)
-        status_text.text("✅ Search complete!")
-        time.sleep(0.5)
-
-        progress_bar.empty()
-        status_text.empty()
-
-        if not isinstance(data, list):
-            st.warning("⚠️ Unexpected data format received")
-            return []
-
-        return data
-
-    except Exception as e:
-        progress_bar.empty()
-        status_text.empty()
-        st.error(f"❌ Search failed: {e}")
-        return []
-
-
-def fetch_all_records(token: str) -> List[Dict]:
-    """Enhanced function to fetch ALL records with proper pagination"""
-    if not token:
-        st.error("Token is required")
-        return []
-    
-    all_records = []
-    skip = 0
-    limit = 1000  # Keep reasonable batch size
-    page = 1
-    
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-    
-    try:
-        # Create progress indicators
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        while True:
-            url = f"https://backend2.swecha.org/api/v1/records/?skip={skip}&limit={limit}"
-            
-            # Update progress
-            status_text.text(f"🔄 Loading records... Page {page} ({len(all_records)} records loaded)")
-            
-            response = requests.get(url, headers=headers, timeout=60)
-            response.raise_for_status()
-            data = response.json()
-            
-            if not isinstance(data, list):
-                st.warning("⚠️ Unexpected data format received")
-                break
-            
-            # If no data returned, we've reached the end
-            if not data:
-                logger.info(f"No more records found at page {page}")
-                break
-            
-            # Add records to our collection
-            all_records.extend(data)
-            logger.info(f"Fetched {len(data)} records from page {page}, total: {len(all_records)}")
-            
-            # If we got less than the limit, we've reached the end
-            if len(data) < limit:
-                logger.info(f"Reached end of records at page {page}")
-                break
-            
-            # Prepare for next iteration
-            skip += limit
-            page += 1
-            
-            # Update progress (estimate based on current data)
-            if len(all_records) > 0:
-                progress_percentage = min(0.95, (len(all_records) / (len(all_records) + 100)) * 100)
-                progress_bar.progress(progress_percentage / 100)
-            
-            # Safety check to prevent infinite loops
-            if page > 100:  # Reasonable limit
-                logger.warning(f"Stopped at page {page} to prevent infinite loop")
-                st.warning(f"⚠️ Stopped loading at page {page}. Contact admin if you need more records.")
-                break
-        
-        # Complete progress
-        progress_bar.progress(1.0)
-        status_text.text(f"✅ Completed! Loaded {len(all_records)} records from {page} pages")
-        
-        # Clear progress indicators after a brief delay
-        time.sleep(1)
-        progress_bar.empty()
-        status_text.empty()
-        
-        if all_records:
-            st.success(f"✅ Successfully loaded {len(all_records)} total records!")
-            logger.info(f"Total records fetched: {len(all_records)}")
-        else:
-            st.warning("No records found")
-            
-        return all_records
-        
-    except Exception as e:
-        st.error(f"❌ Database fetch failed: {e}")
-        logger.error(f"Error fetching all records: {e}")
-        return []
-
-
-
-# def fetch_user_contributions(user_id: str, token: str) -> List[Dict]:
-#     """Fetch user contributions from the API"""
-#     if not user_id or not token:
-#         st.error("User ID and token are required")
-#         return []
-
-#     url = f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions"
-#     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-
-#     try:
-#         progress_bar = st.progress(0)
-#         status_text = st.empty()
-
-#         status_text.text("🔄 Fetching your contributions...")
-#         progress_bar.progress(30)
-
-#         response = requests.get(url, headers=headers, timeout=30)
-#         progress_bar.progress(70)
-#         status_text.text("📊 Processing contributions...")
-
-#         response.raise_for_status()
-#         data = response.json()
-
-#         progress_bar.progress(100)
-#         status_text.text("✅ Contributions loaded!")
-#         time.sleep(0.5)
-
-#         progress_bar.empty()
-#         status_text.empty()
-
-#         if not isinstance(data, list):
-#             logger.warning(f"Expected list, got {type(data)}")
-#             st.warning("⚠️ Unexpected data format received from server")
-#             return []
-
-#         logger.info(f"Successfully fetched {len(data)} contributions")
-#         return data
-
-#     except requests.exceptions.Timeout:
-#         progress_bar.empty()
-#         status_text.empty()
-#         st.error("⏱️ Request timed out. Please try again.")
-#         return []
-#     except requests.exceptions.ConnectionError:
-#         progress_bar.empty()
-#         status_text.empty()
-#         st.error(
-#             "🌐 Unable to connect to the server. Please check your internet connection."
-#         )
-#         return []
-#     except requests.exceptions.HTTPError as e:
-#         progress_bar.empty()
-#         status_text.empty()
-#         if e.response.status_code == 401:
-#             st.error("🔐 Authentication failed. Please log in again.")
-#             st.session_state.authenticated = False
-#         else:
-#             st.error(f"❌ Failed to fetch contributions: HTTP {e.response.status_code}")
-#         return []
-#     except Exception as e:
-#         progress_bar.empty()
-#         status_text.empty()
-#         logger.error(f"Unexpected error fetching contributions: {e}")
-#         st.error(f"❌ Unexpected error: {e}")
-#         return []
-
-def fetch_user_contributions(user_id: str, token: str) -> Optional[Dict]:
-    """Fetch enhanced user contributions using the new API endpoint"""
-    if not user_id or not token:
-        st.error("User ID and token are required")
-        return None
-    
-    url = f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions"
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-    
-    try:
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        status_text.text("🔄 Fetching user contributions...")
-        progress_bar.progress(30)
-        
-        response = requests.get(url, headers=headers, timeout=30)
-        progress_bar.progress(70)
-        status_text.text("📊 Processing contributions data...")
-        
-        response.raise_for_status()
-        data = response.json()
-        
-        progress_bar.progress(100)
-        status_text.text("✅ Contributions loaded!")
-        time.sleep(0.5)
-        progress_bar.empty()
-        status_text.empty()
-        
-        return data
-        
-    except requests.exceptions.HTTPError as e:
-        progress_bar.empty()
-        status_text.empty()
-        if e.response.status_code == 404:
-            st.warning(f"No contributions found for user {user_id}")
-            return None
-        else:
-            st.error(f"❌ Failed to fetch contributions: HTTP {e.response.status_code}")
-            return None
-    except Exception as e:
-        progress_bar.empty()
-        status_text.empty()
-        logger.error(f"Unexpected error fetching contributions: {e}")
-        st.error(f"❌ Unexpected error: {e}")
-        return None
-
-
-
-def fetch_user_contributions_by_media_type(
-    user_id: str, media_type: str, token: str
-) -> List[Dict]:
-    """Fetch user contributions by media type from the API"""
-    if not user_id or not token or not media_type:
-        st.error("User ID, media type, and token are required")
-        return []
-
-    # Validate media type
-    valid_media_types = ["text", "audio", "image", "video"]
-    if media_type not in valid_media_types:
-        st.error(f"Invalid media type. Must be one of: {', '.join(valid_media_types)}")
-        return []
-
-    url = (
-        f"https://backend2.swecha.org/api/v1/users/{user_id}/contributions/{media_type}"
-    )
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-
-    try:
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-
-        status_text.text(f"🔄 Fetching your {media_type} contributions...")
-        progress_bar.progress(30)
-
-        response = requests.get(url, headers=headers, timeout=30)
-        progress_bar.progress(70)
-        status_text.text(f"📊 Processing {media_type} contributions...")
-
-        response.raise_for_status()
-        data = response.json()
-
-        progress_bar.progress(100)
-        status_text.text(f"✅ {media_type.title()} contributions loaded!")
-        time.sleep(0.5)
-
-        progress_bar.empty()
-        status_text.empty()
-
-        if not isinstance(data, list):
-            logger.warning(f"Expected list, got {type(data)}")
-            st.warning("⚠️ Unexpected data format received from server")
-            return []
-
-        logger.info(f"Successfully fetched {len(data)} {media_type} contributions")
-        return data
-
-    except requests.exceptions.Timeout:
-        progress_bar.empty()
-        status_text.empty()
-        st.error(f"⏱️ Request timed out. Please try again.")
-        return []
-    except requests.exceptions.ConnectionError:
-        progress_bar.empty()
-        status_text.empty()
-        st.error(
-            "🌐 Unable to connect to the server. Please check your internet connection."
-        )
-        return []
-    except requests.exceptions.HTTPError as e:
-        progress_bar.empty()
-        status_text.empty()
-        if e.response.status_code == 401:
-            st.error("🔐 Authentication failed. Please log in again.")
-            st.session_state.authenticated = False
-        elif e.response.status_code == 404:
-            st.warning(f"No {media_type} contributions found for this user.")
-            return []
-        else:
-            st.error(
-                f"❌ Failed to fetch {media_type} contributions: HTTP {e.response.status_code}"
-            )
-        return []
-    except Exception as e:
-        progress_bar.empty()
-        status_text.empty()
-        logger.error(f"Unexpected error fetching {media_type} contributions: {e}")
-        st.error(f"❌ Unexpected error: {e}")
-        return []
-
-
-def fetch_all_users(token: str) -> List[Dict]:
-    """Fetch all users from the API with pagination and progress bar"""
-    if not token:
-        st.error("Token is required")
-        return []
-
-    all_users = []
-    skip = 0
-    limit = 1000
-    page = 1
-
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-
-    try:
-        # Create progress indicators
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-
-        # Estimate total pages (you can adjust this based on your knowledge)
-        estimated_total_users = 5000  # Adjust based on your database size
-        estimated_pages = (estimated_total_users // limit) + 1
-
-        while True:
-            url = f"https://backend2.swecha.org/api/v1/users/?skip={skip}&limit={limit}"
-
-            # Update progress
-            progress_percentage = min(
-                (page - 1) / max(estimated_pages, 1), 0.95
-            )  # Cap at 95% until complete
-            progress_bar.progress(progress_percentage)
-            status_text.text(
-                f"🔄 Loading users... Page {page} ({len(all_users)} users loaded)"
-            )
-
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-            data = response.json()
-
-            if not isinstance(data, list):
-                logger.warning(f"Expected list, got {type(data)} on page {page}")
-                st.warning("Unexpected data format received from server")
-                break
-
-            # If no data returned, we've reached the end
-            if not data:
-                logger.info(f"No more users found at page {page}")
-                break
-
-            # Add users to our collection
-            all_users.extend(data)
-            logger.info(
-                f"Fetched {len(data)} users from page {page}, total: {len(all_users)}"
-            )
-
-            # If we got less than the limit, we've reached the end
-            if len(data) < limit:
-                logger.info(f"Reached end of users list at page {page}")
-                break
-
-            # Prepare for next iteration
-            skip += limit
-            page += 1
-
-            # Safety check to prevent infinite loops
-            if page > 50:  # Reasonable limit for most databases
-                logger.warning(f"Stopped at page {page} to prevent infinite loop")
-                st.warning(
-                    f"⚠️ Stopped loading at page {page}. Contact admin if you need more users."
-                )
-                break
-
-        # Complete progress
-        progress_bar.progress(1.0)
-        status_text.text(
-            f"✅ Completed! Loaded {len(all_users)} users from {page} pages"
-        )
-
-        # Clear progress indicators after a brief delay
-        import time
-
-        time.sleep(1)
-        progress_bar.empty()
-        status_text.empty()
-
-        if all_users:
-            st.success(f"✅ Successfully loaded {len(all_users)} users!")
-            logger.info(f"Total users fetched: {len(all_users)}")
-        else:
-            st.warning("No users found")
-
-        return all_users
-
-    except requests.exceptions.Timeout:
-        st.error("Request timed out. Please try again.")
-        return []
-    except requests.exceptions.ConnectionError:
-        st.error(
-            "Unable to connect to the server. Please check your internet connection."
-        )
-        return []
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 401:
-            st.error("Authentication failed. Please log in again.")
-            st.session_state.authenticated = False
-        elif e.response.status_code == 403:
-            st.error("Access denied. You don't have permission to view users list.")
-        else:
-            st.error(f"Failed to fetch users: HTTP {e.response.status_code}")
-        return []
-    except Exception as e:
-        logger.error(f"Unexpected error fetching users: {e}")
-        st.error(f"Unexpected error: {e}")
-        return []
-
-
-
-def find_users_with_zero_records(token: str) -> List[Dict]:
-    """Find users who have zero records uploaded"""
-    try:
-        # Fetch all users and all records
-        all_users = fetch_all_users(token)
-        all_records = fetch_all_records(token)
-        
-        if not all_users or not all_records:
-            st.error("Failed to fetch required data")
-            return []
-        
-        # Get set of user IDs who have uploaded records
-        users_with_records = set()
-        for record in all_records:
-            if record.get("user_id"):
-                users_with_records.add(record["user_id"])
-        
-        # Find users with zero records
-        users_with_zero_records = []
-        for user in all_users:
-            user_id = user.get("id")
-            if user_id and user_id not in users_with_records:
-                users_with_zero_records.append(user)
-        
-        return users_with_zero_records
-        
-    except Exception as e:
-        logger.error(f"Error finding users with zero records: {e}")
-        st.error(f"Error: {e}")
-        return []
+from records import fetch_records,fetch_all_records,fetch_records_with_cache,fetch_any_user_records,fetch_user_contributions,fetch_user_contributions_by_media_type
+from college_overview import display_college_overview
+from user import logger,login_user,verify_otp,request_otp,fetch_all_users,find_users_with_zero_records
+from Auth import decode_jwt_token,initialize_session_state,validate_session_with_refresh,CATEGORIES,CATEGORY_ID_TO_NAME
 
 
 
@@ -1529,120 +508,7 @@ def create_leaderboard_with_names(
         return pd.DataFrame()
 
 
-def display_media_gallery(df: pd.DataFrame, media_type: str, limit: int = 20):
-    """Display gallery of images or videos with titles"""
-    try:
-        # Filter by media type
-        media_df = df[df["media_type"] == media_type].copy()
 
-        if media_df.empty:
-            st.info(f"No {media_type}s found in the database.")
-            return
-
-        # Sort by creation date (newest first)
-        media_df = media_df.sort_values("created_at", ascending=False).head(limit)
-
-        st.subheader(f"📸 Latest {media_type.title()}s ({len(media_df)} shown)")
-
-        # Create columns for gallery display
-        cols_per_row = 3
-        for i in range(0, len(media_df), cols_per_row):
-            cols = st.columns(cols_per_row)
-
-            for j in range(cols_per_row):
-                if i + j < len(media_df):
-                    row = media_df.iloc[i + j]
-
-                    with cols[j]:
-                        # Display media based on type
-                        if media_type == "image":
-                            # Check for different possible URL fields
-                            image_url = None
-                            for field in [
-                                "file_url",
-                                "url",
-                                "image_url",
-                                "media_url",
-                                "thumbnail",
-                            ]:
-                                if field in row and pd.notna(row[field]):
-                                    image_url = row[field]
-                                    break
-
-                            if image_url:
-                                try:
-                                    # Add error handling for image loading
-                                    st.markdown(
-                                        f"""
-                                    <div style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 10px;">
-                                        <img src="{image_url}" style="width: 100%; border-radius: 10px 10px 0 0;">
-                                        <div style="padding: 10px; background: white;">
-                                            <p style="margin: 0; font-weight: bold;">{row.get("title", "Untitled")}</p>
-                                        </div>
-                                    </div>
-                                    """,
-                                        unsafe_allow_html=True,
-                                    )
-                                except Exception as e:
-                                    st.error(f"Failed to load image: {e}")
-                                    st.text(f"Title: {row.get('title', 'Untitled')}")
-                            else:
-                                # Placeholder for missing image
-                                st.markdown(
-                                    f"""
-                                <div style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 10px; background: #f8f9fa; height: 200px; display: flex; align-items: center; justify-content: center;">
-                                    <div style="text-align: center;">
-                                        <p style="font-size: 2em; margin: 0;">📷</p>
-                                        <p style="margin: 0;">{row.get("title", "Untitled")}</p>
-                                    </div>
-                                </div>
-                                """,
-                                    unsafe_allow_html=True,
-                                )
-
-                        elif media_type == "video":
-                            # Check for different possible URL fields
-                            video_url = None
-                            for field in ["file_url", "url", "video_url", "media_url"]:
-                                if field in row and pd.notna(row[field]):
-                                    video_url = row[field]
-                                    break
-
-                            if video_url:
-                                try:
-                                    st.video(video_url)
-                                    st.caption(row.get("title", "Untitled"))
-                                except Exception as e:
-                                    st.error(f"Failed to load video: {e}")
-                                    st.text(f"Title: {row.get('title', 'Untitled')}")
-                            else:
-                                # Placeholder for missing video
-                                st.markdown(
-                                    f"""
-                                <div style="border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 10px; background: #f8f9fa; height: 200px; display: flex; align-items: center; justify-content: center;">
-                                    <div style="text-align: center;">
-                                        <p style="font-size: 2em; margin: 0;">🎥</p>
-                                        <p style="margin: 0;">{row.get("title", "Untitled")}</p>
-                                    </div>
-                                </div>
-                                """,
-                                    unsafe_allow_html=True,
-                                )
-
-                        # Show additional info with better styling
-                        st.markdown(
-                            f"""
-                        <div style="display: flex; justify-content: space-between; padding: 5px 0;">
-                            <span style="color: #666;">📅 {row["created_at"].strftime("%Y-%m-%d")}</span>
-                            <span style="color: #666;">🏷️ {row.get("category", "Uncategorized")}</span>
-                        </div>
-                        """,
-                            unsafe_allow_html=True,
-                        )
-
-    except Exception as e:
-        logger.error(f"Error displaying media gallery: {e}")
-        st.error(f"Error displaying {media_type} gallery: {e}")
 
 
 # Advanced Visualization Functions
@@ -1987,24 +853,6 @@ def create_advanced_overview_dashboard(
         st.info("No specific insights available for this dataset")
 
     # Media Gallery Section for Database Overview
-    if summary.get("df") is not None:
-        st.markdown("---")
-        st.markdown("## 🖼️ Media Gallery")
-
-        # Create tabs for different media types
-        tabs = st.tabs(["📷 Images", "🎥 Videos"])
-
-        with tabs[0]:
-            if summary.get("images_count", 0) > 0:
-                display_media_gallery(summary["df"], "image", limit=12)
-            else:
-                st.info("No images found in the database.")
-
-        with tabs[1]:
-            if summary.get("videos_count", 0) > 0:
-                display_media_gallery(summary["df"], "video", limit=12)
-            else:
-                st.info("No videos found in the database.")
 
 
 def create_user_analytics_dashboard(user_records: List[Dict], username: str):
@@ -2185,10 +1033,6 @@ def main():
     """Enhanced main application with all new features"""
     initialize_session_state()
         # Add this debug info to see what's happening
-    if st.sidebar.button("🔍 Debug Session"):
-        st.sidebar.write("Session State Keys:", list(st.session_state.keys()))
-        st.sidebar.write("Authenticated:", st.session_state.get("authenticated", False))
-        st.sidebar.write("Browser Auth Checked:", st.session_state.get("browser_auth_checked", False))
     
     if st.session_state.get("authenticated", False):
         if not validate_session_with_refresh():
@@ -2340,6 +1184,7 @@ def main():
                     "🏠 My Records",
                     "🔍 Search User",
                     "🌐 Database Overview",
+                    "🏫 College Overview",
                     "⚙️ Settings",
                 ],
                 key="dashboard_option",
@@ -2631,111 +1476,200 @@ def main():
                 else:
                     st.warning(f"No records found for user: {selected_user_id}")
 
-    elif dashboard_mode == "🌐 Database Overview":
-        st.markdown("## 🌐 Database Overview & Analytics")
-
-        if st.button("📊 Load Database Overview", type="primary"):
-            # Load all records
-            all_records = fetch_all_records(st.session_state.token)
-
-            if all_records:
-                st.session_state.database_overview = all_records
-
-                # Load users if not already loaded
-                if st.session_state.users_list is None:
-                    with st.spinner("Loading users for leaderboard..."):
-                        users = fetch_all_users(st.session_state.token)
-                        if users:
-                            st.session_state.users_list = users
-                            st.session_state.user_mapping = create_user_mapping(users)
-
-                # Create summary
-                summary = advanced_summarize(all_records)
-
-                if summary:
-                    # Get total users count
-                    total_users = (
-                        len(st.session_state.users_list)
-                        if st.session_state.users_list
-                        else 0
-                    )
-                    st.markdown("---")
-                    st.subheader("👥 User Activity Analysis")
+    elif dashboard_mode == "🌐 Database Overview": 
+     st.markdown("## 🌐 Database Overview & Analytics") 
+    
+    # Time filter selection
+    st.markdown("### ⏰ Time Filter")
+    time_filter = st.selectbox(
+        "Select time range:",
+        ["📊 Overall", "📅 Last 24 Hours", "📆 Last 7 Days"],
+        key="db_time_filter"
+    )
+    
+    # Helper function to filter records by time
+    def filter_records_by_time(records, time_filter):
+        if time_filter == "📊 Overall":
+            return records
+        
+        from datetime import datetime, timedelta
+        import pytz
+        
+        now = datetime.now(pytz.UTC)
+        
+        if time_filter == "📅 Last 24 Hours":
+            cutoff_time = now - timedelta(hours=24)
+        elif time_filter == "📆 Last 7 Days":
+            cutoff_time = now - timedelta(days=7)
+        else:
+            return records
+        
+        filtered_records = []
+        for record in records:
+            try:
+                # Try different timestamp field names
+                timestamp_str = record.get('timestamp') or record.get('created_at') or record.get('date')
+                if timestamp_str:
+                    # Parse timestamp (adjust format as needed)
+                    if 'T' in timestamp_str:
+                        record_time = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                    else:
+                        record_time = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
                     
-                    col1, col2, col3, col4 = st.columns(4)
+                    # Make timezone aware if needed
+                    if record_time.tzinfo is None:
+                        record_time = pytz.UTC.localize(record_time)
                     
-                    with col1:
-                        total_users = len(fetch_all_users(st.session_state.token))
-                        st.metric("Total Registered Users", total_users)
-                    
-                    with col2:
-                        active_users = summary.get("total_users", 0)
-                        st.metric("Active Users", active_users)
-                    
-                    with col3:
-                        inactive_users = total_users - active_users
-                        st.metric("Users with Zero Records", inactive_users)
-                    
-                    with col4:
-                        activity_rate = (active_users / total_users) * 100 if total_users > 0 else 0
-                        st.metric("Activity Rate", f"{activity_rate:.1f}%")
-
-
-                    # Create enhanced dashboard with all new features
-                    create_advanced_overview_dashboard(
-                        summary, st.session_state.user_mapping, total_users
-                    )
-
-                    # Export functionality for database overview - FIXED
-                    st.markdown("---")
-                    st.markdown("### 📥 Export Database Summary")
-                    df = pd.DataFrame(all_records)  # Use all_records instead of user_records
-                    create_export_section(df, summary)
-                    
-                    # Add zero records analysis
-                    st.markdown("---")
-                    st.subheader("👥 User Activity Analysis")
-                    
-                    col1, col2, col3, col4 = st.columns(4)
-                    
-                    with col1:
-                        total_users = len(fetch_all_users(st.session_state.token))
-                        st.metric("Total Registered Users", total_users)
-                    
-                    with col2:
-                        active_users = summary.get("total_users", 0)
-                        st.metric("Active Users", active_users)
-                    
-                    with col3:
-                        inactive_users = total_users - active_users
-                        st.metric("Users with Zero Records", inactive_users)
-                    
-                    with col4:
-                        activity_rate = (active_users / total_users) * 100 if total_users > 0 else 0
-                        st.metric("Activity Rate", f"{activity_rate:.1f}%")
-
-        # Show existing overview if available
-        elif st.session_state.database_overview:
-            st.info(
-                "📊 Database overview already loaded. Click 'Load Database Overview' to refresh."
-            )
-
-            summary = advanced_summarize(st.session_state.database_overview)
-            if summary:
-                total_users = (
-                    len(st.session_state.users_list)
-                    if st.session_state.users_list
-                    else 0
-                )
-                create_advanced_overview_dashboard(
-                    summary, st.session_state.user_mapping, total_users
-                )
+                    if record_time >= cutoff_time:
+                        filtered_records.append(record)
+            except (ValueError, TypeError, AttributeError):
+                # If timestamp parsing fails, include the record in overall view
+                if time_filter == "📊 Overall":
+                    filtered_records.append(record)
+                continue
+        
+        return filtered_records
+    
+    # Display selected time range info
+    if time_filter == "📅 Last 24 Hours":
+        st.info("📅 Showing data from the last 24 hours")
+    elif time_filter == "📆 Last 7 Days":
+        st.info("📆 Showing data from the last 7 days")
+    else:
+        st.info("📊 Showing all-time data")
+ 
+    if st.button("📊 Load Database Overview", type="primary"): 
+        # Load all records 
+        all_records = fetch_all_records(st.session_state.token) 
+ 
+        if all_records: 
+            # Filter records based on selected time range
+            filtered_records = filter_records_by_time(all_records, time_filter)
+            
+            st.session_state.database_overview = filtered_records
+            st.session_state.database_overview_filter = time_filter
+            st.session_state.database_overview_all = all_records  # Keep original for reference
+ 
+            # Load users if not already loaded 
+            if st.session_state.users_list is None: 
+                with st.spinner("Loading users for leaderboard..."): 
+                    users = fetch_all_users(st.session_state.token) 
+                    if users: 
+                        st.session_state.users_list = users 
+                        st.session_state.user_mapping = create_user_mapping(users) 
+ 
+            # Create summary from filtered records
+            summary = advanced_summarize(filtered_records) 
+ 
+            if summary: 
+                # Get total users count 
+                total_users = ( 
+                    len(st.session_state.users_list) 
+                    if st.session_state.users_list 
+                    else 0 
+                ) 
                 
-                # Add export section for existing overview too
+                # Display filter summary
                 st.markdown("---")
-                st.markdown("### 📥 Export Database Summary")
-                df = pd.DataFrame(st.session_state.database_overview)
-                create_export_section(df, summary)
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric("📊 Total Records", len(all_records))
+                    
+                with col2:
+                    st.metric("🔍 Filtered Records", len(filtered_records))
+                    
+                with col3:
+                    filter_percentage = (len(filtered_records) / len(all_records) * 100) if len(all_records) > 0 else 0
+                    st.metric("📈 Filter Coverage", f"{filter_percentage:.1f}%")
+ 
+                # Create enhanced dashboard with filtered data
+                create_advanced_overview_dashboard( 
+                    summary, st.session_state.user_mapping, total_users 
+                ) 
+ 
+                # Export functionality for database overview
+                st.markdown("---") 
+                st.markdown("### 📥 Export Database Summary") 
+                df = pd.DataFrame(filtered_records)  # Use filtered records
+                create_export_section(df, summary) 
+                 
+                # Add zero records analysis 
+                st.markdown("---") 
+                st.subheader("👥 User Activity Analysis") 
+                 
+                col1, col2, col3, col4 = st.columns(4) 
+                 
+                with col1: 
+                    total_users = len(fetch_all_users(st.session_state.token)) 
+                    st.metric("Total Registered Users", total_users) 
+                 
+                with col2: 
+                    active_users = summary.get("total_users", 0) 
+                    st.metric(f"Active Users ({time_filter.split(' ')[-1] if time_filter != '📊 Overall' else 'Overall'})", active_users) 
+                 
+                with col3: 
+                    inactive_users = total_users - active_users 
+                    st.metric("Users with Zero Records", inactive_users) 
+                 
+                with col4: 
+                    activity_rate = (active_users / total_users) * 100 if total_users > 0 else 0 
+                    st.metric("Activity Rate", f"{activity_rate:.1f}%") 
+            else:
+                st.warning(f"No records found for {time_filter.lower()}")
+ 
+    # Show existing overview if available 
+    elif st.session_state.database_overview: 
+        # Check if filter has changed
+        current_filter = getattr(st.session_state, 'database_overview_filter', "📊 Overall")
+        
+        if current_filter != time_filter:
+            st.warning(f"⚠️ Currently showing data for '{current_filter}'. Click 'Load Database Overview' to apply '{time_filter}' filter.")
+        else:
+            st.info( 
+                f"📊 Database overview already loaded for '{time_filter}'. Click 'Load Database Overview' to refresh." 
+            ) 
+ 
+        summary = advanced_summarize(st.session_state.database_overview) 
+        if summary: 
+            total_users = ( 
+                len(st.session_state.users_list) 
+                if st.session_state.users_list 
+                else 0 
+            ) 
+            
+            # Display current filter info
+            st.markdown("---")
+            col1, col2, col3 = st.columns(3)
+            
+            all_records_count = len(getattr(st.session_state, 'database_overview_all', st.session_state.database_overview))
+            filtered_records_count = len(st.session_state.database_overview)
+            
+            with col1:
+                st.metric("📊 Total Records", all_records_count)
+                
+            with col2:
+                st.metric("🔍 Filtered Records", filtered_records_count)
+                
+            with col3:
+                filter_percentage = (filtered_records_count / all_records_count * 100) if all_records_count > 0 else 0
+                st.metric("📈 Filter Coverage", f"{filter_percentage:.1f}%")
+            
+            create_advanced_overview_dashboard( 
+                summary, st.session_state.user_mapping, total_users 
+            ) 
+             
+            # Add export section for existing overview too 
+            st.markdown("---") 
+            st.markdown("### 📥 Export Database Summary") 
+            df = pd.DataFrame(st.session_state.database_overview) 
+            create_export_section(df, summary)
+    
+        else:
+          st.info("👆 Click 'Load Database Overview' to start analyzing your database with the selected time filter.")
+
+    elif dashboard_mode == "🏫 College Overview":
+       display_college_overview(fetch_all_users, fetch_user_contributions, st.session_state.token)
 
 
     elif dashboard_mode == "⚙️ Settings":
