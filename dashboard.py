@@ -1476,90 +1476,197 @@ def main():
                 else:
                     st.warning(f"No records found for user: {selected_user_id}")
 
-    elif dashboard_mode == "🌐 Database Overview":
-        st.markdown("## 🌐 Database Overview & Analytics")
-
-        if st.button("📊 Load Database Overview", type="primary"):
-            # Load all records
-            all_records = fetch_all_records(st.session_state.token)
-
-            if all_records:
-                st.session_state.database_overview = all_records
-
-                # Load users if not already loaded
-                if st.session_state.users_list is None:
-                    with st.spinner("Loading users for leaderboard..."):
-                        users = fetch_all_users(st.session_state.token)
-                        if users:
-                            st.session_state.users_list = users
-                            st.session_state.user_mapping = create_user_mapping(users)
-
-                # Create summary
-                summary = advanced_summarize(all_records)
-
-                if summary:
-                    # Get total users count
-                    total_users = (
-                        len(st.session_state.users_list)
-                        if st.session_state.users_list
-                        else 0
-                    )
-
-                    # Create enhanced dashboard with all new features
-                    create_advanced_overview_dashboard(
-                        summary, st.session_state.user_mapping, total_users
-                    )
-
-                    # Export functionality for database overview - FIXED
-                    st.markdown("---")
-                    st.markdown("### 📥 Export Database Summary")
-                    df = pd.DataFrame(all_records)  # Use all_records instead of user_records
-                    create_export_section(df, summary)
+    elif dashboard_mode == "🌐 Database Overview": 
+     st.markdown("## 🌐 Database Overview & Analytics") 
+    
+    # Time filter selection
+    st.markdown("### ⏰ Time Filter")
+    time_filter = st.selectbox(
+        "Select time range:",
+        ["📊 Overall", "📅 Last 24 Hours", "📆 Last 7 Days"],
+        key="db_time_filter"
+    )
+    
+    # Helper function to filter records by time
+    def filter_records_by_time(records, time_filter):
+        if time_filter == "📊 Overall":
+            return records
+        
+        from datetime import datetime, timedelta
+        import pytz
+        
+        now = datetime.now(pytz.UTC)
+        
+        if time_filter == "📅 Last 24 Hours":
+            cutoff_time = now - timedelta(hours=24)
+        elif time_filter == "📆 Last 7 Days":
+            cutoff_time = now - timedelta(days=7)
+        else:
+            return records
+        
+        filtered_records = []
+        for record in records:
+            try:
+                # Try different timestamp field names
+                timestamp_str = record.get('timestamp') or record.get('created_at') or record.get('date')
+                if timestamp_str:
+                    # Parse timestamp (adjust format as needed)
+                    if 'T' in timestamp_str:
+                        record_time = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                    else:
+                        record_time = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
                     
-                    # Add zero records analysis
-                    st.markdown("---")
-                    st.subheader("👥 User Activity Analysis")
+                    # Make timezone aware if needed
+                    if record_time.tzinfo is None:
+                        record_time = pytz.UTC.localize(record_time)
                     
-                    col1, col2, col3, col4 = st.columns(4)
-                    
-                    with col1:
-                        total_users = len(fetch_all_users(st.session_state.token))
-                        st.metric("Total Registered Users", total_users)
-                    
-                    with col2:
-                        active_users = summary.get("total_users", 0)
-                        st.metric("Active Users", active_users)
-                    
-                    with col3:
-                        inactive_users = total_users - active_users
-                        st.metric("Users with Zero Records", inactive_users)
-                    
-                    with col4:
-                        activity_rate = (active_users / total_users) * 100 if total_users > 0 else 0
-                        st.metric("Activity Rate", f"{activity_rate:.1f}%")
-
-        # Show existing overview if available
-        elif st.session_state.database_overview:
-            st.info(
-                "📊 Database overview already loaded. Click 'Load Database Overview' to refresh."
-            )
-
-            summary = advanced_summarize(st.session_state.database_overview)
-            if summary:
-                total_users = (
-                    len(st.session_state.users_list)
-                    if st.session_state.users_list
-                    else 0
-                )
-                create_advanced_overview_dashboard(
-                    summary, st.session_state.user_mapping, total_users
-                )
+                    if record_time >= cutoff_time:
+                        filtered_records.append(record)
+            except (ValueError, TypeError, AttributeError):
+                # If timestamp parsing fails, include the record in overall view
+                if time_filter == "📊 Overall":
+                    filtered_records.append(record)
+                continue
+        
+        return filtered_records
+    
+    # Display selected time range info
+    if time_filter == "📅 Last 24 Hours":
+        st.info("📅 Showing data from the last 24 hours")
+    elif time_filter == "📆 Last 7 Days":
+        st.info("📆 Showing data from the last 7 days")
+    else:
+        st.info("📊 Showing all-time data")
+ 
+    if st.button("📊 Load Database Overview", type="primary"): 
+        # Load all records 
+        all_records = fetch_all_records(st.session_state.token) 
+ 
+        if all_records: 
+            # Filter records based on selected time range
+            filtered_records = filter_records_by_time(all_records, time_filter)
+            
+            st.session_state.database_overview = filtered_records
+            st.session_state.database_overview_filter = time_filter
+            st.session_state.database_overview_all = all_records  # Keep original for reference
+ 
+            # Load users if not already loaded 
+            if st.session_state.users_list is None: 
+                with st.spinner("Loading users for leaderboard..."): 
+                    users = fetch_all_users(st.session_state.token) 
+                    if users: 
+                        st.session_state.users_list = users 
+                        st.session_state.user_mapping = create_user_mapping(users) 
+ 
+            # Create summary from filtered records
+            summary = advanced_summarize(filtered_records) 
+ 
+            if summary: 
+                # Get total users count 
+                total_users = ( 
+                    len(st.session_state.users_list) 
+                    if st.session_state.users_list 
+                    else 0 
+                ) 
                 
-                # Add export section for existing overview too
+                # Display filter summary
                 st.markdown("---")
-                st.markdown("### 📥 Export Database Summary")
-                df = pd.DataFrame(st.session_state.database_overview)
-                create_export_section(df, summary)
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric("📊 Total Records", len(all_records))
+                    
+                with col2:
+                    st.metric("🔍 Filtered Records", len(filtered_records))
+                    
+                with col3:
+                    filter_percentage = (len(filtered_records) / len(all_records) * 100) if len(all_records) > 0 else 0
+                    st.metric("📈 Filter Coverage", f"{filter_percentage:.1f}%")
+ 
+                # Create enhanced dashboard with filtered data
+                create_advanced_overview_dashboard( 
+                    summary, st.session_state.user_mapping, total_users 
+                ) 
+ 
+                # Export functionality for database overview
+                st.markdown("---") 
+                st.markdown("### 📥 Export Database Summary") 
+                df = pd.DataFrame(filtered_records)  # Use filtered records
+                create_export_section(df, summary) 
+                 
+                # Add zero records analysis 
+                st.markdown("---") 
+                st.subheader("👥 User Activity Analysis") 
+                 
+                col1, col2, col3, col4 = st.columns(4) 
+                 
+                with col1: 
+                    total_users = len(fetch_all_users(st.session_state.token)) 
+                    st.metric("Total Registered Users", total_users) 
+                 
+                with col2: 
+                    active_users = summary.get("total_users", 0) 
+                    st.metric(f"Active Users ({time_filter.split(' ')[-1] if time_filter != '📊 Overall' else 'Overall'})", active_users) 
+                 
+                with col3: 
+                    inactive_users = total_users - active_users 
+                    st.metric("Users with Zero Records", inactive_users) 
+                 
+                with col4: 
+                    activity_rate = (active_users / total_users) * 100 if total_users > 0 else 0 
+                    st.metric("Activity Rate", f"{activity_rate:.1f}%") 
+            else:
+                st.warning(f"No records found for {time_filter.lower()}")
+ 
+    # Show existing overview if available 
+    elif st.session_state.database_overview: 
+        # Check if filter has changed
+        current_filter = getattr(st.session_state, 'database_overview_filter', "📊 Overall")
+        
+        if current_filter != time_filter:
+            st.warning(f"⚠️ Currently showing data for '{current_filter}'. Click 'Load Database Overview' to apply '{time_filter}' filter.")
+        else:
+            st.info( 
+                f"📊 Database overview already loaded for '{time_filter}'. Click 'Load Database Overview' to refresh." 
+            ) 
+ 
+        summary = advanced_summarize(st.session_state.database_overview) 
+        if summary: 
+            total_users = ( 
+                len(st.session_state.users_list) 
+                if st.session_state.users_list 
+                else 0 
+            ) 
+            
+            # Display current filter info
+            st.markdown("---")
+            col1, col2, col3 = st.columns(3)
+            
+            all_records_count = len(getattr(st.session_state, 'database_overview_all', st.session_state.database_overview))
+            filtered_records_count = len(st.session_state.database_overview)
+            
+            with col1:
+                st.metric("📊 Total Records", all_records_count)
+                
+            with col2:
+                st.metric("🔍 Filtered Records", filtered_records_count)
+                
+            with col3:
+                filter_percentage = (filtered_records_count / all_records_count * 100) if all_records_count > 0 else 0
+                st.metric("📈 Filter Coverage", f"{filter_percentage:.1f}%")
+            
+            create_advanced_overview_dashboard( 
+                summary, st.session_state.user_mapping, total_users 
+            ) 
+             
+            # Add export section for existing overview too 
+            st.markdown("---") 
+            st.markdown("### 📥 Export Database Summary") 
+            df = pd.DataFrame(st.session_state.database_overview) 
+            create_export_section(df, summary)
+    
+        else:
+          st.info("👆 Click 'Load Database Overview' to start analyzing your database with the selected time filter.")
 
     elif dashboard_mode == "🏫 College Overview":
        display_college_overview(fetch_all_users, fetch_user_contributions, st.session_state.token)
