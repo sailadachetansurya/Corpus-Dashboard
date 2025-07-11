@@ -5,6 +5,5 @@ plotly
 requests
 matplotlib
 seaborn
-wordcloud
-altair
 streamlit-aggrid
+streamlit-js-eval
