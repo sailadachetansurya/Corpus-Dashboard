@@ -15,8 +15,9 @@ def load_college_files(folder_path="data"):
     college_files = glob.glob(os.path.join(folder_path, "*.csv"))
     college_dfs = []
     for file in college_files:
-        # Skip system files
-        if any(skip_file in file.lower() for skip_file in ['contributions_data', 'records', 'users', 'user_data', 'clgdetails']):
+        # Skip system files but be more specific
+        filename = os.path.basename(file).lower()
+        if any(skip_file in filename for skip_file in ['contributions_data', 'records', 'users', 'user_data']):
             continue
             
         college_name = os.path.basename(file).replace(".csv", "").replace("_", " ")
@@ -31,6 +32,7 @@ def load_college_files(folder_path="data"):
         return pd.DataFrame()
     
     return pd.concat(college_dfs, ignore_index=True)
+
 
 def get_all_user_details_and_store(users_data, output_csv_path):
     """Get all user details and store them in a CSV file"""
